@@ -331,10 +331,10 @@
    BANCO DE FRASES
    ========================================================= */
 const CHAPTERS = [
-  {id:"facil",   nome:"Frases simples",        desc:"ordem direta", qtd:8},
-  {id:"medio",   nome:"Advérbios e regência",   desc:"ordem variável", qtd:7},
-  {id:"dificil", nome:"Orações subordinadas",   desc:"conectivos", qtd:6},
-  {id:"expert",  nome:"Crase e concordância",   desc:"nível vestibular", qtd:6},
+  {id:"facil",   nome:"Frases simples",        desc:"ordem direta", qtd:12},
+  {id:"medio",   nome:"Advérbios e regência",   desc:"ordem variável", qtd:10},
+  {id:"dificil", nome:"Orações subordinadas",   desc:"conectivos", qtd:8},
+  {id:"expert",  nome:"Crase e concordância",   desc:"nível vestibular", qtd:8},
 ];
 
 const FRASES = {
@@ -391,6 +391,14 @@ const FRASES = {
      explicacao:"'O jogo' está no singular; o artigo precisa concordar: o, não as."},
     {id:"f26", blocos:["Nós","moramos","numa","casa","grande"], respostas:[[0,1,2,3,4]], distratores:["num"],
      explicacao:"'Casa' é substantivo feminino, por isso a contração correta é 'numa' (em+uma), não 'num'."},
+    {id:"f27", blocos:["A","cadeira","é","azul"], respostas:[[0,1,2,3]], distratores:["azuis"],
+     explicacao:"O adjetivo concorda no singular com o sujeito 'a cadeira': azul, não azuis."},
+    {id:"f28", blocos:["João","e","Maria","são","alegres"], respostas:[[0,1,2,3,4]], distratores:["alegre"],
+     explicacao:"O predicativo concorda no plural com o sujeito composto: alegres, não alegre."},
+    {id:"f29", blocos:["O","carro","novo","é","rápido"], respostas:[[0,1,2,3,4]], distratores:["rápidos"],
+     explicacao:"O adjetivo concorda no singular com 'carro': rápido, não rápidos."},
+    {id:"f30", blocos:["Ela","comprou","vestidos","caros"], respostas:[[0,1,2,3]], distratores:["caro"],
+     explicacao:"O adjetivo concorda com 'vestidos' (plural): caros, não caro."},
   ],
   medio: [
     {id:"m1", blocos:["Ontem","eu","fui","à","praia"], respostas:[[0,1,2,3,4],[1,2,3,4,0]], distratores:["a"],
@@ -441,6 +449,10 @@ const FRASES = {
      explicacao:"O verbo 'interessar-se' pede a preposição 'por', não 'de'."},
     {id:"m24", blocos:["O","ônibus","passa","de","hora","em","hora"], respostas:[[0,1,2,3,4,5,6]], distratores:["das"],
      explicacao:"A expressão correta é 'de hora em hora', sem contração."},
+    {id:"m25", blocos:["Ele","gosta","de","livros","antigos"], respostas:[[0,1,2,3,4]], distratores:["com"],
+     explicacao:"'Gostar de' exige a preposição 'de' para indicar o objeto do gosto."},
+    {id:"m26", blocos:["Nós","viajamos","para","o","litoral","no","verão"], respostas:[[0,1,2,3,4,5,6]], distratores:["a"],
+     explicacao:"'Viajar para' indica destino; 'no verão' é a época correta (em+o)."},
   ],
   dificil: [
     {id:"d1", blocos:["Embora","estivesse","cansado","o","atleta","terminou","a","corrida"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["estava"],
@@ -483,6 +495,8 @@ const FRASES = {
      explicacao:"Com 'talvez' expressando incerteza, o verbo costuma ir para o subjuntivo: viaje, não viajo."},
     {id:"d20", blocos:["À","medida","que","o","tempo","passava,","ele","melhorava"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["a"],
      explicacao:"A expressão 'à medida que' exige crase, por ser locução conjuntiva consagrada pelo uso."},
+    {id:"d21", blocos:["Mal","ele","chegou,","a","festa","começou"], respostas:[[0,1,2,3,4,5]], distratores:["quando"],
+     explicacao:"'Mal' (assim que) pede o pretérito perfeito, enquanto 'quando' seria mais genérico."},
   ],
   expert: [
     {id:"e1", blocos:["Refiro-me","àquela","situação","que","mencionamos","ontem"], respostas:[[0,1,2,3,4,5]], distratores:["aquela","essa"],
@@ -525,6 +539,8 @@ const FRASES = {
      explicacao:"Antes de pronomes pessoais como 'você', não se usa crase: a você, não à você."},
     {id:"e20", blocos:["Fomos","nós","que","resolvemos","o","problema"], respostas:[[0,1,2,3,4,5]], distratores:["Fui","resolveu"],
      explicacao:"O verbo concorda com 'nós': Fomos... resolvemos, não Fui... resolveu."},
+    {id:"e21", blocos:["Tais","medidas","foram","tomadas","pela","direção"], respostas:[[0,1,2,3,4,5]], distratores:["Tais","pelas"],
+     explicacao:"'Tais' concorda em gênero com 'medidas'; 'pela' (preposição + a) é a forma correta."},
   ],
 };
 const DAILY_TEXTS = [
@@ -567,7 +583,8 @@ const DAILY_TEXTS = [
   {id:"po5", tipo:"Mini-poema", linhas:[["A","lua","brilha","no","céu","escuro,"],["guiando","quem","busca","um","caminho","seguro."]],
    dica:"Fala sobre a lua iluminando a noite para quem precisa de orientação.",
    explicacao:"Mini-poema original sobre a lua como guia na escuridão."},
-];/* =========================================================
+];
+/* =========================================================
    ESTADO / PERSISTÊNCIA
    ========================================================= */
 const STORAGE_KEY = "monte_a_frase_v2";
@@ -1117,7 +1134,8 @@ $("btnContinue").addEventListener("click", ()=>{
 $("btnClear").addEventListener("click", ()=>{
   const frase=currentFrase();
   slots = frase.blocos.map(()=>null);
-  bank = fullBank(frase);
+  // Recoloca todas as fichas no banco e embaralha
+  bank = shuffle(fullBank(frase));
   render();
 });
 
