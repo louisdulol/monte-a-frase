@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Monte a Frase</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --bg-soft:#f6f7f8;
+    --border:#d3d6da;
+    --border-strong:#878a8c;
+    --text:#1a1a1b;
+    --text-soft:#787c7f;
+    --green:#6aaa64;
+    --green-dark:#4b8a46;
+    --yellow:#c9b458;
+    --yellow-soft:#fbf3c8;
+    --radius:4px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font);
+    color:var(--text);
+    background:var(--bg);
+    min-height:100vh;
+  }
+  button{font-family:inherit;}
+  a{color:inherit;}
+  :focus-visible{outline:2px solid var(--text); outline-offset:2px;}
+
+  /* ============ HEADER ============ */
+  .topbar{
+    border-bottom:1px solid var(--border);
+    position:sticky; top:0; background:var(--bg); z-index:10;
+  }
+  .topbar-inner{
+    max-width:500px; margin:0 auto; height:52px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 14px;
+  }
+  .wordmark{
+    font-size:1.3rem; font-weight:700; letter-spacing:.05em;
+    margin:0; text-align:center; flex:1;
+  }
+  .icon-btn{
+    background:none; border:none; font-size:1.3rem; color:var(--text);
+    cursor:pointer; padding:6px 8px; line-height:1; border-radius:var(--radius);
+  }
+  .icon-btn:hover{background:var(--bg-soft);}
+  .score-pill{
+    font-weight:700; font-size:.85rem; color:var(--text-soft);
+    min-width:50px; text-align:right; padding:6px 4px;
+  }
+
+  /* ============ LAYOUT ============ */
+  .app{max-width:500px; margin:0 auto; padding:22px 16px 60px;}
+  .screen{display:none;}
+  .screen.active{display:block; animation:fadein .2s ease;}
+  @keyframes fadein{from{opacity:0;} to{opacity:1;}}
+
+  .eyebrow{
+    font-size:.78rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--text-soft); margin:0 0 16px;
+  }
+
+  /* ============ SUMÁRIO DE CAPÍTULOS ============ */
+  .toc{display:flex; flex-direction:column; gap:8px; margin-bottom:20px;}
+  .toc-row{
+    border:2px solid var(--border); border-radius:var(--radius);
+    padding:12px 14px; display:flex; align-items:center; gap:12px;
+    cursor:pointer; background:none; width:100%; text-align:left;
+    transition:border-color .12s, background .12s;
+  }
+  .toc-row:hover:not(.locked){border-color:var(--border-strong);}
+  .toc-row.selected{border-color:var(--text); background:var(--bg-soft);}
+  .toc-row.locked{opacity:.5; cursor:not-allowed;}
+  .toc-row .num{font-weight:700; color:var(--text-soft); font-size:.85rem; width:18px; flex-shrink:0;}
+  .toc-row .info{flex:1; min-width:0;}
+  .toc-row .label{font-weight:700; font-size:.95rem; display:block;}
+  .toc-row .desc{font-size:.78rem; color:var(--text-soft); display:block; margin-top:1px;}
+  .toc-row .stars{color:var(--green-dark); font-size:.9rem; letter-spacing:1px; flex-shrink:0;}
+  .lock-icon{width:16px; height:16px; flex-shrink:0;}
+  .lock-icon path{fill:none; stroke:var(--text-soft); stroke-width:1.8;}
+
+  .btn-primary{
+    width:100%; background:var(--text); color:#fff; border:none;
+    border-radius:var(--radius); padding:13px; font-weight:700;
+    font-size:.95rem; letter-spacing:.02em; cursor:pointer;
+  }
+  .btn-primary:disabled{background:var(--border); color:var(--text-soft); cursor:not-allowed;}
+  .btn-primary:not(:disabled):hover{background:#000;}
+  .meta-line{font-size:.8rem; color:var(--text-soft); margin:12px 0 0; text-align:center;}
+  .link-btn{
+    background:none; border:none; color:var(--text-soft); font-size:.82rem;
+    text-decoration:underline; text-underline-offset:2px; cursor:pointer; padding:4px 0;
+  }
+  .link-btn:hover{color:var(--text);}
+
+  /* ============ JOGO ============ */
+  .chapter-tag{
+    font-size:.75rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.04em; color:var(--text-soft);
+  }
+  .progress-track{height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin:8px 0 4px;}
+  .progress-fill{height:100%; background:var(--green); width:0%; transition:width .3s ease;}
+  .streak-note{font-size:.8rem; font-weight:700; color:var(--green-dark); min-height:1.3em; margin:0 0 10px;}
+
+  .sentence-line{
+    padding:2px 0 18px;
+    border-bottom:1px solid var(--border); margin-bottom:20px; min-height:52px;
+  }
+  .sentence-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;}
+  .sentence-row:last-child{margin-bottom:0;}
+  .clue-box{
+    background:var(--yellow-soft); border-left:3px solid var(--yellow);
+    border-radius:var(--radius); padding:10px 12px; font-size:.88rem;
+    margin-bottom:16px; line-height:1.4;
+  }
+  .clue-box strong{display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:#8a6d1f; margin-bottom:3px;}
+  .daily-card{
+    border:2px solid var(--text); border-radius:var(--radius);
+    padding:14px; display:flex; align-items:center; gap:12px; justify-content:space-between;
+  }
+  .daily-card-text{display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .daily-card-title{font-weight:700; font-size:.95rem;}
+  .daily-card-sub{font-size:.78rem; color:var(--text-soft);}
+  .daily-card .btn-outline{flex-shrink:0;}
+  .slot-cell{
+    min-width:44px; min-height:44px; border:2px dashed var(--border);
+    border-radius:var(--radius); display:flex; align-items:center; justify-content:center;
+    padding:2px; transition:border-color .15s, background .15s;
+  }
+  .slot-cell .dash{width:16px; height:2px; background:var(--border);}
+  .slot-cell.filled{border-style:solid; border-color:transparent; padding:0;}
+  .slot-cell.drop-target{border-color:var(--text); background:var(--bg-soft); border-style:solid;}
+  .slot-cell.pulse{animation:pulse-cell 1s ease 2;}
+  @keyframes pulse-cell{0%,100%{background:transparent;} 50%{background:var(--yellow-soft);}}
+
+  .bank-label{font-size:.78rem; color:var(--text-soft); margin:0 0 10px;}
+  .word-bank{display:flex; flex-wrap:wrap; gap:10px; min-height:50px; border-radius:var(--radius); transition:background .15s;}
+  .word-bank.drop-target{background:var(--bg-soft);}
+
+  .tile{
+    background:#fff; border:2px solid var(--border-strong); color:var(--text);
+    font-weight:700; font-size:.9rem; padding:10px 14px; border-radius:var(--radius);
+    cursor:grab; user-select:none; -webkit-user-select:none; touch-action:none;
+    transition:border-color .1s;
+  }
+  .tile:hover{border-color:var(--text);}
+  .slot-cell .tile{
+    border-color:var(--text); width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    cursor:grab;
+  }
+  .tile.dragging{opacity:0;}
+  .tile.pulse{animation:pulse-tile 1s ease 2;}
+  @keyframes pulse-tile{0%,100%{box-shadow:none;} 50%{box-shadow:0 0 0 3px var(--yellow);}}
+  .ghost-tile{
+    position:fixed; z-index:200; pointer-events:none;
+    background:#fff; border:2px solid var(--text); color:var(--text);
+    font-weight:700; font-size:.9rem; padding:10px 14px; border-radius:var(--radius);
+    transform:translate(-50%,-50%);
+  }
+
+  .controls{display:flex; gap:10px; align-items:center; margin-top:2px;}
+  .btn-outline{
+    background:#fff; border:2px solid var(--border-strong); color:var(--text);
+    font-weight:700; font-size:.82rem; padding:10px 14px; border-radius:var(--radius);
+    cursor:pointer; white-space:nowrap;
+  }
+  .btn-outline:hover{border-color:var(--text);}
+  .btn-outline:disabled{opacity:.4; cursor:not-allowed; border-color:var(--border-strong);}
+  .controls .btn-primary{width:auto; flex:1; padding:10px 14px;}
+
+  /* ============ CORREÇÃO ============ */
+  .correction{margin-top:24px; padding-top:18px; border-top:1px solid var(--border); display:none;}
+  .correction.show{display:block; animation:fadein .2s ease;}
+  .verdict-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .verdict-mark{width:24px; height:24px; flex-shrink:0;}
+  .verdict-mark path{fill:none; stroke-width:5; stroke-linecap:round; stroke-linejoin:round;}
+  .verdict-mark.good path{stroke:var(--green);}
+  .verdict-mark.bad path{stroke:var(--text-soft);}
+  .verdict-text{font-weight:700; font-size:1.05rem;}
+  .verdict-text.good{color:var(--green-dark);}
+  .verdict-text.bad{color:var(--text);}
+  .verdict-points{font-size:.78rem; color:var(--text-soft); margin-left:auto; white-space:nowrap;}
+  .recap-frase{font-size:.95rem; margin:0 0 10px;}
+  .explain-box{background:var(--bg-soft); border-radius:var(--radius); padding:10px 12px; font-size:.85rem; margin-bottom:16px; line-height:1.4;}
+  .explain-box strong{display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-soft); margin-bottom:3px;}
+
+  /* ============ BOLETIM ============ */
+  .grade{font-size:2.8rem; font-weight:800; text-align:center; margin:4px 0 2px;}
+  .grade-caption{text-align:center; font-size:.82rem; color:var(--text-soft); margin-bottom:22px;}
+  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:20px;}
+  .stat-box{text-align:center; border:1px solid var(--border); border-radius:var(--radius); padding:10px 4px;}
+  .stat-num{display:block; font-size:1.35rem; font-weight:800;}
+  .stat-lbl{display:block; font-size:.62rem; color:var(--text-soft); text-transform:uppercase; letter-spacing:.02em; margin-top:2px;}
+  .teacher-remark{font-size:.92rem; text-align:center; margin-bottom:22px;}
+  .summary-actions{display:flex; flex-direction:column; gap:10px; align-items:center;}
+  .summary-actions .btn-primary{max-width:320px;}
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(10px);
+    background:var(--text); color:#fff; font-size:.85rem; font-weight:700;
+    padding:10px 18px; border-radius:var(--radius); z-index:300;
+    opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:380px){
+    .wordmark{font-size:1.1rem;}
+    .app{padding:18px 12px 50px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn" id="btnHome" aria-label="Voltar ao sumário" title="Voltar ao sumário">←</button>
+    <h1 class="wordmark">MONTE A FRASE</h1>
+    <div class="score-pill" id="hudScore">0</div>
+  </div>
+</header>
+
+<main class="app">
+
+  <!-- ================= HOME / SUMÁRIO ================= -->
+  <section class="screen active" id="screen-home">
+    <p class="eyebrow">Desafio do dia</p>
+    <div class="daily-card" id="dailyCard">
+      <div class="daily-card-text">
+        <span class="daily-card-title">Desafio do dia</span>
+        <span class="daily-card-sub" id="dailyCardSub">Monte o mini-texto a partir de uma pista.</span>
+      </div>
+      <button class="btn-outline" id="btnDailyPlay">Jogar</button>
+    </div>
+
+    <p class="eyebrow" style="margin-top:26px;">Escolha um capítulo</p>
+    <div class="toc" id="toc"></div>
+    <button class="btn-primary" id="btnJogar" disabled>Começar</button>
+    <p class="meta-line" id="homeStats"></p>
+    <div style="text-align:center; margin-top:14px;">
+      <button class="link-btn" id="btnReset">Apagar progresso salvo</button>
+    </div>
+  </section>
+
+  <!-- ================= JOGO ================= -->
+  <section class="screen" id="screen-game">
+    <div class="chapter-tag" id="chapterTag">Capítulo</div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <p class="streak-note" id="streakNote"></p>
+    <div class="clue-box" id="clueBox" style="display:none;">
+      <strong>Pista</strong>
+      <span id="clueText"></span>
+    </div>
+
+    <div class="sentence-line" id="sentenceLine"></div>
+
+    <p class="bank-label">Arraste ou toque para posicionar — nem toda ficha é usada</p>
+    <div class="word-bank" id="wordBank"></div>
+
+    <div class="controls">
+      <button class="btn-outline" id="btnHint">Dica (-20)</button>
+      <button class="btn-primary" id="btnVerify">Verificar</button>
+      <button class="link-btn" id="btnClear">Limpar</button>
+    </div>
+
+    <div class="correction" id="correction">
+      <div class="verdict-row">
+        <svg class="verdict-mark" id="verdictMark" viewBox="0 0 40 40" aria-hidden="true"></svg>
+        <span class="verdict-text" id="verdictText"></span>
+        <span class="verdict-points" id="verdictPoints"></span>
+      </div>
+      <p class="recap-frase" id="recapFrase"></p>
+      <div class="explain-box"><strong>Por quê</strong><span id="explicacaoTexto"></span></div>
+      <button class="btn-primary" id="btnContinue">Continuar</button>
+    </div>
+  </section>
+
+  <!-- ================= BOLETIM / RESUMO ================= -->
+  <section class="screen" id="screen-summary">
+    <p class="eyebrow" id="summaryTitle">Boletim do capítulo</p>
+    <div class="grade" id="summaryGrade">0%</div>
+    <p class="grade-caption" id="summaryCaption">de aproveitamento</p>
+    <div class="stat-grid">
+      <div class="stat-box"><span class="stat-num" id="repAcertos">0</span><span class="stat-lbl">Acertos</span></div>
+      <div class="stat-box"><span class="stat-num" id="repErros">0</span><span class="stat-lbl">Erros</span></div>
+      <div class="stat-box"><span class="stat-num" id="repDicas">0</span><span class="stat-lbl">Dicas</span></div>
+      <div class="stat-box"><span class="stat-num" id="repPontos">0</span><span class="stat-lbl">Pontos</span></div>
+    </div>
+    <p class="teacher-remark" id="teacherRemark"></p>
+    <div class="summary-actions">
+      <button class="btn-primary" id="btnRepeat">Refazer capítulo</button>
+      <button class="link-btn" id="btnBackHome">Voltar ao sumário</button>
+    </div>
+  </section>
+
+  <!-- ================= RESULTADO DO DESAFIO DO DIA ================= -->
+  <section class="screen" id="screen-daily-result">
+    <p class="eyebrow">Desafio do dia</p>
+    <div class="grade" id="dailyStreakNum">0</div>
+    <p class="grade-caption">dia(s) seguidos</p>
+    <div class="stat-grid">
+      <div class="stat-box"><span class="stat-num" id="dailyTentativas">0</span><span class="stat-lbl">Tentativas</span></div>
+      <div class="stat-box"><span class="stat-num" id="dailyDicas">0</span><span class="stat-lbl">Dicas</span></div>
+      <div class="stat-box"><span class="stat-num" id="dailyMelhor">0</span><span class="stat-lbl">Melhor seq.</span></div>
+      <div class="stat-box"><span class="stat-num" id="dailyPontos">0</span><span class="stat-lbl">Pontos</span></div>
+    </div>
+    <p class="teacher-remark" id="dailyRecap"></p>
+    <div class="summary-actions">
+      <button class="link-btn" id="btnDailyBackHome">Voltar ao início</button>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   BANCO DE FRASES
+   ========================================================= */
+const CHAPTERS = [
+  {id:"facil",   nome:"Frases simples",        desc:"ordem direta", qtd:12},
+  {id:"medio",   nome:"Advérbios e regência",   desc:"ordem variável", qtd:10},
+  {id:"dificil", nome:"Orações subordinadas",   desc:"conectivos", qtd:8},
+  {id:"expert",  nome:"Crase e concordância",   desc:"nível vestibular", qtd:8},
+];
+
+const FRASES = {
+  facil: [
+    {id:"f1", blocos:["O","menino","comeu","a","maçã"], respostas:[[0,1,2,3,4]], distratores:["as"],
+     explicacao:"Concordância: 'a' concorda no singular com 'maçã' — 'as' seria plural."},
+    {id:"f2", blocos:["A","menina","bebe","água"], respostas:[[0,1,2,3]], distratores:["bebem"],
+     explicacao:"O verbo concorda no singular com o sujeito 'a menina': bebe, não bebem."},
+    {id:"f3", blocos:["O","cachorro","late","alto"], respostas:[[0,1,2,3]], distratores:["alta"],
+     explicacao:"'Alto' aqui é advérbio (modifica o verbo 'late') e não varia como o adjetivo 'alta'."},
+    {id:"f4", blocos:["Eu","gosto","de","chocolate"], respostas:[[0,1,2,3]], distratores:["com"],
+     explicacao:"O verbo 'gostar' é transitivo indireto e pede a preposição 'de', não 'com'."},
+    {id:"f5", blocos:["Nós","vamos","à","escola"], respostas:[[0,1,2,3]], distratores:["a"],
+     explicacao:"'Ir a' + 'a escola' se fundem em crase: vamos à escola (com acento)."},
+    {id:"f6", blocos:["O","professor","explicou","a","lição"], respostas:[[0,1,2,3,4]], distratores:["as"],
+     explicacao:"'A lição' está no singular; o artigo precisa concordar: a, não as."},
+    {id:"f7", blocos:["As","flores","são","bonitas"], respostas:[[0,1,2,3]], distratores:["bonita"],
+     explicacao:"O predicativo concorda em número com o sujeito plural: bonitas, não bonita."},
+    {id:"f8", blocos:["Maria","estuda","todos","os","dias"], respostas:[[0,1,2,3,4]], distratores:["toda"],
+     explicacao:"A expressão correta é 'todos os dias' — 'toda' não concorda com 'dias' (masculino)."},
+    {id:"f9", blocos:["O","bebê","dorme","no","berço"], respostas:[[0,1,2,3,4]], distratores:["na"],
+     explicacao:"'Berço' é substantivo masculino, por isso a contração correta é 'no' (em + o), não 'na'."},
+    {id:"f10", blocos:["O","gato","preto","dorme","no","sofá"], respostas:[[0,1,2,3,4,5]], distratores:["pretos"],
+     explicacao:"O adjetivo concorda no singular com 'gato': preto, não pretos."},
+    {id:"f11", blocos:["Pedro","quer","um","sorvete"], respostas:[[0,1,2,3]], distratores:["uma"],
+     explicacao:"'Sorvete' é substantivo masculino, por isso o artigo correto é 'um', não 'uma'."},
+    {id:"f12", blocos:["Meu","pai","trabalha","na","fábrica"], respostas:[[0,1,2,3,4]], distratores:["no"],
+     explicacao:"'Fábrica' é substantivo feminino, por isso a contração correta é 'na' (em + a), não 'no'."},
+    {id:"f13", blocos:["A","menina","desenha","uma","casa"], respostas:[[0,1,2,3,4]], distratores:["um"],
+     explicacao:"'Casa' é substantivo feminino, por isso o artigo correto é 'uma', não 'um'."},
+    {id:"f14", blocos:["Os","alunos","estudam","muito"], respostas:[[0,1,2,3]], distratores:["estuda"],
+     explicacao:"O verbo concorda no plural com o sujeito 'os alunos': estudam, não estuda."},
+    {id:"f15", blocos:["Ela","mora","em","Recife"], respostas:[[0,1,2,3]], distratores:["no"],
+     explicacao:"Antes de nomes de cidade normalmente não se usa contração: mora em Recife, não no Recife."},
+    {id:"f16", blocos:["O","sol","nasce","no","leste"], respostas:[[0,1,2,3,4]], distratores:["na"],
+     explicacao:"'Leste' é substantivo masculino, por isso a contração correta é 'no' (em + o), não 'na'."},
+    {id:"f17", blocos:["Nós","comemos","pão","de","manhã"], respostas:[[0,1,2,3,4]], distratores:["da"],
+     explicacao:"A expressão correta é 'de manhã', sem contração com artigo."},
+    {id:"f18", blocos:["Ele","escreve","cartas","bonitas"], respostas:[[0,1,2,3]], distratores:["bonito"],
+     explicacao:"O adjetivo concorda em gênero e número com 'cartas' (fem. plural): bonitas, não bonito."},
+    {id:"f19", blocos:["As","crianças","brincam","no","parque"], respostas:[[0,1,2,3,4]], distratores:["brinca"],
+     explicacao:"O verbo concorda no plural com 'as crianças': brincam, não brinca."},
+    {id:"f20", blocos:["Eu","bebo","suco","de","laranja"], respostas:[[0,1,2,3,4]], distratores:["com"],
+     explicacao:"A expressão correta é 'suco de laranja', com a preposição 'de'."},
+    {id:"f21", blocos:["O","menino","chuta","a","bola"], respostas:[[0,1,2,3,4]], distratores:["as"],
+     explicacao:"'A bola' está no singular; o artigo precisa concordar: a, não as."},
+    {id:"f22", blocos:["A","professora","corrige","as","provas"], respostas:[[0,1,2,3,4]], distratores:["duas"],
+     explicacao:"O artigo 'as' indica todas as provas; 'duas' mudaria o sentido para apenas duas delas."},
+    {id:"f23", blocos:["Meus","amigos","moram","perto","daqui"], respostas:[[0,1,2,3,4]], distratores:["Meu"],
+     explicacao:"'Amigos' está no plural, por isso o possessivo correto é 'Meus', não 'Meu'."},
+    {id:"f24", blocos:["A","vovó","faz","bolo","de","chocolate"], respostas:[[0,1,2,3,4,5]], distratores:["com"],
+     explicacao:"A expressão correta é 'bolo de chocolate', com a preposição 'de'."},
+    {id:"f25", blocos:["O","time","venceu","o","jogo","ontem"], respostas:[[0,1,2,3,4,5]], distratores:["as"],
+     explicacao:"'O jogo' está no singular; o artigo precisa concordar: o, não as."},
+    {id:"f26", blocos:["Nós","moramos","numa","casa","grande"], respostas:[[0,1,2,3,4]], distratores:["num"],
+     explicacao:"'Casa' é substantivo feminino, por isso a contração correta é 'numa' (em+uma), não 'num'."},
+    {id:"f27", blocos:["A","cadeira","é","azul"], respostas:[[0,1,2,3]], distratores:["azuis"],
+     explicacao:"O adjetivo concorda no singular com o sujeito 'a cadeira': azul, não azuis."},
+    {id:"f28", blocos:["João","e","Maria","são","alegres"], respostas:[[0,1,2,3,4]], distratores:["alegre"],
+     explicacao:"O predicativo concorda no plural com o sujeito composto: alegres, não alegre."},
+    {id:"f29", blocos:["O","carro","novo","é","rápido"], respostas:[[0,1,2,3,4]], distratores:["rápidos"],
+     explicacao:"O adjetivo concorda no singular com 'carro': rápido, não rápidos."},
+    {id:"f30", blocos:["Ela","comprou","vestidos","caros"], respostas:[[0,1,2,3]], distratores:["caro"],
+     explicacao:"O adjetivo concorda com 'vestidos' (plural): caros, não caro."},
+  ],
+  medio: [
+    {id:"m1", blocos:["Ontem","eu","fui","à","praia"], respostas:[[0,1,2,3,4],[1,2,3,4,0]], distratores:["a"],
+     explicacao:"'Ir a' + 'a praia' exige crase: à praia. O advérbio 'ontem' pode abrir ou fechar a frase."},
+    {id:"m2", blocos:["O","menino","comeu","uma","maçã","vermelha"], respostas:[[0,1,2,3,4,5]], distratores:["vermelho"],
+     explicacao:"O adjetivo concorda no feminino com 'maçã': vermelha, não vermelho."},
+    {id:"m3", blocos:["Ela","não","quer","ir","à","escola","hoje"], respostas:[[0,1,2,3,4,5,6]], distratores:["a"],
+     explicacao:"'Ir à escola' tem crase (a + a). A negação 'não' sempre vem antes do verbo."},
+    {id:"m4", blocos:["Precisamos","de","mais","tempo"], respostas:[[0,1,2,3]], distratores:["com"],
+     explicacao:"'Precisar', no sentido de necessitar, pede a preposição 'de', não 'com'."},
+    {id:"m5", blocos:["Nós","não","gostamos","de","futebol"], respostas:[[0,1,2,3,4]], distratores:["com"],
+     explicacao:"'Gostar' pede a preposição 'de': gostamos de futebol."},
+    {id:"m6", blocos:["O","professor","entregou","os","exames","aos","alunos"], respostas:[[0,1,2,3,4,5,6]], distratores:["ao"],
+     explicacao:"'Os exames' e 'os alunos' estão no plural, então a contração precisa concordar: aos, não ao."},
+    {id:"m7", blocos:["A","menina","está","estudando","para","a","prova"], respostas:[[0,1,2,3,4,5,6]], distratores:["pela"],
+     explicacao:"A locução correta é 'estudar para a prova' (finalidade), não 'pela'."},
+    {id:"m8", blocos:["Apesar","da","chuva","eles","saíram","cedo"], respostas:[[0,1,2,3,4,5]], distratores:["na"],
+     explicacao:"'Apesar de' + 'a chuva' forma 'apesar da chuva' (de + a = da)."},
+    {id:"m9", blocos:["Quando","cheguei","em","casa","o","jantar","já","estava","pronto"], respostas:[[0,1,2,3,4,5,6,7,8]], distratores:["estavam"],
+     explicacao:"O verbo concorda no singular com 'o jantar': estava, não estavam."},
+    {id:"m10", blocos:["Meu","amigo","comprou","um","presente","para","sua","mãe"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["por"],
+     explicacao:"O verbo bitransitivo pede 'para' (destinatário do presente), não 'por'."},
+    {id:"m11", blocos:["Depois","do","almoço","nós","fomos","ao","parque"], respostas:[[0,1,2,3,4,5,6],[3,4,5,6,0,1,2]], distratores:["no"],
+     explicacao:"'Ir ao parque' usa a + o = ao, não 'no' (em + o). A expressão de tempo pode abrir ou fechar a frase."},
+    {id:"m12", blocos:["Eu","sei","que","você","tem","razão"], respostas:[[0,1,2,3,4,5]], distratores:["tenho"],
+     explicacao:"O verbo da oração subordinada concorda com 'você': tem (3ª pessoa), não tenho."},
+    {id:"m13", blocos:["Todos","os","dias","eu","leio","um","pouco"], respostas:[[0,1,2,3,4,5,6]], distratores:["toda"],
+     explicacao:"A expressão correta é 'todos os dias' — 'toda' não concorda com 'dias' (masculino)."},
+    {id:"m14", blocos:["Ela","chegou","atrasada","à","reunião"], respostas:[[0,1,2,3,4]], distratores:["a"],
+     explicacao:"'Chegar a' + 'a reunião' exige crase: à reunião."},
+    {id:"m15", blocos:["Nós","confiamos","em","você"], respostas:[[0,1,2,3]], distratores:["com"],
+     explicacao:"O verbo 'confiar' pede a preposição 'em', não 'com'."},
+    {id:"m16", blocos:["Ele","insiste","em","sair","sozinho"], respostas:[[0,1,2,3,4]], distratores:["para"],
+     explicacao:"O verbo 'insistir' pede a preposição 'em', não 'para'."},
+    {id:"m17", blocos:["Precisamos","chegar","antes","das","seis"], respostas:[[0,1,2,3,4]], distratores:["as"],
+     explicacao:"'De + as' se contrai em 'das': antes das seis, não antes as seis."},
+    {id:"m18", blocos:["A","loja","fica","perto","da","praça"], respostas:[[0,1,2,3,4,5]], distratores:["de"],
+     explicacao:"'Perto de' + 'a praça' se contrai em 'da' (de + a): perto da praça."},
+    {id:"m19", blocos:["Assim","que","possível,","eu","te","aviso"], respostas:[[0,1,2,3,4,5]], distratores:["possíveis"],
+     explicacao:"'Possível' aqui não varia em número; 'possíveis' não se encaixa na expressão 'assim que possível'."},
+    {id:"m20", blocos:["Ainda","não","sei","se","vou","à","festa"], respostas:[[0,1,2,3,4,5,6]], distratores:["a"],
+     explicacao:"'Ir a' + 'a festa' exige crase: vou à festa."},
+    {id:"m21", blocos:["Ele","sempre","chega","na","hora","certa"], respostas:[[0,1,2,3,4,5]], distratores:["a"],
+     explicacao:"'Chegar em' + 'a hora' se contrai em 'na' (em + a): chega na hora certa."},
+    {id:"m22", blocos:["Nunca","deixe","de","estudar"], respostas:[[0,1,2,3]], distratores:["para"],
+     explicacao:"A expressão correta é 'deixar de' fazer algo, não 'deixar para'."},
+    {id:"m23", blocos:["Ela","se","interessa","por","música","clássica"], respostas:[[0,1,2,3,4,5]], distratores:["de"],
+     explicacao:"O verbo 'interessar-se' pede a preposição 'por', não 'de'."},
+    {id:"m24", blocos:["O","ônibus","passa","de","hora","em","hora"], respostas:[[0,1,2,3,4,5,6]], distratores:["das"],
+     explicacao:"A expressão correta é 'de hora em hora', sem contração."},
+    {id:"m25", blocos:["Ele","gosta","de","livros","antigos"], respostas:[[0,1,2,3,4]], distratores:["com"],
+     explicacao:"'Gostar de' exige a preposição 'de' para indicar o objeto do gosto."},
+    {id:"m26", blocos:["Nós","viajamos","para","o","litoral","no","verão"], respostas:[[0,1,2,3,4,5,6]], distratores:["a"],
+     explicacao:"'Viajar para' indica destino; 'no verão' é a época correta (em+o)."},
+  ],
+  dificil: [
+    {id:"d1", blocos:["Embora","estivesse","cansado","o","atleta","terminou","a","corrida"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["estava"],
+     explicacao:"'Embora' introduz oração concessiva e exige o subjuntivo: estivesse, não estava (indicativo)."},
+    {id:"d2", blocos:["Se","chover","amanhã","o","jogo","será","adiado"], respostas:[[0,1,2,3,4,5,6]], distratores:["chove"],
+     explicacao:"Depois de 'se' condicional referente ao futuro, usa-se o futuro do subjuntivo: chover, não chove."},
+    {id:"d3", blocos:["O","aluno","que","estudou","mais","passou","no","exame"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["estuda"],
+     explicacao:"A oração relativa descreve um fato passado: estudou, não estuda."},
+    {id:"d4", blocos:["Assim","que","ela","chegou","o","telefone","tocou"], respostas:[[0,1,2,3,4,5,6]], distratores:["chega"],
+     explicacao:"'Assim que' com valor de tempo passado pede pretérito: chegou, não chega."},
+    {id:"d5", blocos:["Ninguém","sabia","por","que","ele","tinha","saído"], respostas:[[0,1,2,3,4,5,6]], distratores:["porque"],
+     explicacao:"Aqui 'por que' (separado) equivale a 'por qual motivo' — 'porque' junto seria resposta, não pergunta indireta."},
+    {id:"d6", blocos:["Caso","você","precise","de","ajuda","me","avise"], respostas:[[0,1,2,3,4,5,6]], distratores:["precisa"],
+     explicacao:"'Caso' pede o verbo no subjuntivo: precise, não precisa (indicativo)."},
+    {id:"d7", blocos:["A","professora","disse","que","a","prova","seria","adiada"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["vai"],
+     explicacao:"O verbo da oração subordinada segue o tempo do verbo principal (disse, passado): seria, não vai."},
+    {id:"d8", blocos:["Como","estava","chovendo","cancelamos","o","passeio"], respostas:[[0,1,2,3,4,5]], distratores:["estive"],
+     explicacao:"O verbo concorda com o sujeito da chuva (3ª pessoa): estava, não estive (1ª pessoa)."},
+    {id:"d9", blocos:["Ele","correu","tanto","que","chegou","primeiro"], respostas:[[0,1,2,3,4,5]], distratores:["muito"],
+     explicacao:"A construção consecutiva é 'tanto...que' — 'muito' não forma essa estrutura corretamente aqui."},
+    {id:"d10", blocos:["Contanto","que","todos","concordem","faremos","a","viagem"], respostas:[[0,1,2,3,4,5,6]], distratores:["concordam"],
+     explicacao:"'Contanto que' exige o subjuntivo: concordem, não concordam (indicativo)."},
+    {id:"d11", blocos:["Quando","terminar","o","trabalho,","eu","descanso"], respostas:[[0,1,2,3,4,5]], distratores:["termino"],
+     explicacao:"Depois de 'quando' com valor de futuro, usa-se o futuro do subjuntivo: terminar, não termino."},
+    {id:"d12", blocos:["Ainda","que","chova,","iremos","à","praia"], respostas:[[0,1,2,3,4,5]], distratores:["chove"],
+     explicacao:"'Ainda que' introduz oração concessiva e exige o subjuntivo: chova, não chove."},
+    {id:"d13", blocos:["Depois","que","ele","saiu,","tudo","mudou"], respostas:[[0,1,2,3,4,5]], distratores:["sai"],
+     explicacao:"A oração descreve um fato já concluído: saiu, no pretérito, não sai."},
+    {id:"d14", blocos:["Por","mais","que","insista,","não","vou","ceder"], respostas:[[0,1,2,3,4,5,6]], distratores:["insisto"],
+     explicacao:"'Por mais que' introduz concessão e exige o subjuntivo: insista, não insisto."},
+    {id:"d15", blocos:["Onde","quer","que","você","vá,","eu","vou","junto"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["vai"],
+     explicacao:"'Onde quer que' exige o subjuntivo: vá, não vai."},
+    {id:"d16", blocos:["Logo","que","a","aula","acabou,","saímos","correndo"], respostas:[[0,1,2,3,4,5,6]], distratores:["acaba"],
+     explicacao:"A oração descreve um fato já concluído: acabou, no pretérito, não acaba."},
+    {id:"d17", blocos:["Sempre","que","posso,","eu","leio","um","livro"], respostas:[[0,1,2,3,4,5,6]], distratores:["possa"],
+     explicacao:"Aqui a ideia é de hábito real, por isso usa-se o indicativo: posso, não possa."},
+    {id:"d18", blocos:["Duvido","que","ele","chegue","a","tempo"], respostas:[[0,1,2,3,4,5]], distratores:["chega"],
+     explicacao:"O verbo 'duvidar' exige subjuntivo na oração seguinte: chegue, não chega."},
+    {id:"d19", blocos:["Talvez","eu","viaje","no","próximo","mês"], respostas:[[0,1,2,3,4,5]], distratores:["viajo"],
+     explicacao:"Com 'talvez' expressando incerteza, o verbo costuma ir para o subjuntivo: viaje, não viajo."},
+    {id:"d20", blocos:["À","medida","que","o","tempo","passava,","ele","melhorava"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["a"],
+     explicacao:"A expressão 'à medida que' exige crase, por ser locução conjuntiva consagrada pelo uso."},
+    {id:"d21", blocos:["Mal","ele","chegou,","a","festa","começou"], respostas:[[0,1,2,3,4,5]], distratores:["quando"],
+     explicacao:"'Mal' (assim que) pede o pretérito perfeito, enquanto 'quando' seria mais genérico."},
+  ],
+  expert: [
+    {id:"e1", blocos:["Refiro-me","àquela","situação","que","mencionamos","ontem"], respostas:[[0,1,2,3,4,5]], distratores:["aquela","essa"],
+     explicacao:"Crase antes de pronome demonstrativo feminino: a + aquela = àquela."},
+    {id:"e2", blocos:["Obedecemos","às","regras","estabelecidas","pela","escola"], respostas:[[0,1,2,3,4,5]], distratores:["as","pelo"],
+     explicacao:"'Obedecer' pede a preposição 'a'; diante de 'as regras' (fem. plural) ocorre crase: às."},
+    {id:"e3", blocos:["Aspiro","a","um","cargo","de","destaque","na","empresa"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["à","numa"],
+     explicacao:"'Aspirar a' (desejar) não tem crase aqui: 'um cargo' é substantivo masculino, sem 'a' feminino para se fundir."},
+    {id:"e4", blocos:["Faz","dois","anos","que","não","o","vejo"], respostas:[[0,1,2,3,4,5,6]], distratores:["Fazem","lhe"],
+     explicacao:"'Fazer' indicando tempo decorrido é impessoal e fica sempre no singular: Faz, nunca Fazem."},
+    {id:"e5", blocos:["Havia","muitas","pessoas","na","festa","ontem"], respostas:[[0,1,2,3,4,5]], distratores:["Haviam","pela"],
+     explicacao:"'Haver' no sentido de existir é impessoal e nunca vai para o plural: Havia, nunca Haviam."},
+    {id:"e6", blocos:["Ele","é","um","dos","que","mais","se","dedicam","ao","trabalho"], respostas:[[0,1,2,3,4,5,6,7,8,9]], distratores:["dedica","pelo"],
+     explicacao:"Na construção 'um dos que', o verbo da oração seguinte concorda no plural: dedicam, não dedica."},
+    {id:"e7", blocos:["A","maioria","dos","alunos","chegou","atrasada"], respostas:[[0,1,2,3,4,5]], distratores:["chegaram","atrasado"],
+     explicacao:"Com 'a maioria de' + plural, o verbo pode ficar no singular: chegou. 'Atrasada' concorda com 'a maioria' (fem.)."},
+    {id:"e8", blocos:["Assistimos","ao","filme","recomendado","pela","crítica"], respostas:[[0,1,2,3,4,5]], distratores:["o","da"],
+     explicacao:"'Assistir' no sentido de ver pede a preposição 'a': assistimos ao filme (a + o = ao), não 'o filme'."},
+    {id:"e9", blocos:["Chegamos","à","conclusão","de","que","o","projeto","era","viável"], respostas:[[0,1,2,3,4,5,6,7,8]], distratores:["a","foi"],
+     explicacao:"'Chegar a' + 'a conclusão' funde-se em crase: chegamos à conclusão."},
+    {id:"e10", blocos:["Fazia","anos","que","ele","não","visitava","a","cidade","natal"], respostas:[[0,1,2,3,4,5,6,7,8]], distratores:["Faziam","essa"],
+     explicacao:"'Fazer' indicando tempo também é impessoal no passado: Fazia, nunca Faziam."},
+    {id:"e11", blocos:["Prefiro","chá","a","café"], respostas:[[0,1,2,3]], distratores:["que","do"],
+     explicacao:"'Preferir' pede a estrutura 'preferir X a Y' — não se usa 'que' nem 'do que' com esse verbo."},
+    {id:"e12", blocos:["Ele","reside","na","capital","paulista"], respostas:[[0,1,2,3,4]], distratores:["em","à"],
+     explicacao:"'Capital' é substantivo feminino; a contração correta é 'na' (em + a), não apenas 'em'."},
+    {id:"e13", blocos:["Nunca","vi","ninguém","tão","dedicado","quanto","ela"], respostas:[[0,1,2,3,4,5,6]], distratores:["como","que"],
+     explicacao:"A correlação correta é 'tão... quanto', não 'tão... como' ou 'tão... que'."},
+    {id:"e14", blocos:["Todos","nós","precisamos","uns","dos","outros"], respostas:[[0,1,2,3,4,5]], distratores:["um","outro"],
+     explicacao:"A expressão recíproca correta é 'uns dos outros', sempre no plural."},
+    {id:"e15", blocos:["É","proibido","fumar","neste","recinto"], respostas:[[0,1,2,3,4]], distratores:["no","essa"],
+     explicacao:"'Neste' (em + este) retoma um lugar específico já indicado; é a forma mais adequada aqui."},
+    {id:"e16", blocos:["Nós","lhe","demos","o","recado","ontem"], respostas:[[0,1,2,3,4,5]], distratores:["deram","lo"],
+     explicacao:"'Demos' concorda com 'nós' (1ª pessoa do plural); 'deram' seria 3ª pessoa, incorreta aqui."},
+    {id:"e17", blocos:["Faltam","três","dias","para","o","exame"], respostas:[[0,1,2,3,4,5]], distratores:["Falta","pelo"],
+     explicacao:"O sujeito 'três dias' é plural, por isso o verbo concorda no plural: Faltam, não Falta."},
+    {id:"e18", blocos:["Ela","é","alérgica","à","poeira"], respostas:[[0,1,2,3,4]], distratores:["a","de"],
+     explicacao:"'Ser alérgico a' + 'a poeira' funde-se em crase: alérgica à poeira."},
+    {id:"e19", blocos:["Isso","não","diz","respeito","a","você"], respostas:[[0,1,2,3,4,5]], distratores:["à","com"],
+     explicacao:"Antes de pronomes pessoais como 'você', não se usa crase: a você, não à você."},
+    {id:"e20", blocos:["Fomos","nós","que","resolvemos","o","problema"], respostas:[[0,1,2,3,4,5]], distratores:["Fui","resolveu"],
+     explicacao:"O verbo concorda com 'nós': Fomos... resolvemos, não Fui... resolveu."},
+    {id:"e21", blocos:["Tais","medidas","foram","tomadas","pela","direção"], respostas:[[0,1,2,3,4,5]], distratores:["Tais","pelas"],
+     explicacao:"'Tais' concorda em gênero com 'medidas'; 'pela' (preposição + a) é a forma correta."},
+  ],
+};
+const DAILY_TEXTS = [
+  {id:"dp1", tipo:"Provérbio popular", linhas:[["Devagar","se","vai","ao","longe."]],
+   dica:"Ensina que ter paciência e ir com calma leva a bons resultados.",
+   explicacao:"Provérbio popular: pressa nem sempre é sinônimo de eficiência."},
+  {id:"dp2", tipo:"Provérbio popular", linhas:[["Água","mole","em","pedra","dura,"],["tanto","bate","até","que","fura."]],
+   dica:"Fala sobre insistência: repetir uma ação pequena, aos poucos, pode vencer algo bem resistente.",
+   explicacao:"Provérbio popular: a persistência supera obstáculos difíceis."},
+  {id:"dp3", tipo:"Provérbio popular", linhas:[["Quem","canta","seus","males","espanta."]],
+   dica:"Diz que alegria e música ajudam a esquecer os problemas.",
+   explicacao:"Provérbio popular sobre o poder da alegria diante das dificuldades."},
+  {id:"dp4", tipo:"Provérbio popular", linhas:[["De","grão","em","grão,"],["a","galinha","enche","o","papo."]],
+   dica:"Mostra que pequenas partes, somadas aos poucos, formam um todo grande.",
+   explicacao:"Provérbio popular sobre a importância de pequenos esforços constantes."},
+  {id:"dp5", tipo:"Provérbio popular", linhas:[["Antes","tarde","do","que","nunca."]],
+   dica:"Diz que é melhor fazer algo com atraso do que nunca fazer.",
+   explicacao:"Provérbio popular sobre a importância de agir, mesmo tarde."},
+  {id:"dp6", tipo:"Provérbio popular", linhas:[["Filho","de","peixe,"],["peixinho","é."]],
+   dica:"Fala sobre semelhanças entre pais e filhos.",
+   explicacao:"Provérbio popular sobre heranças de comportamento entre gerações."},
+  {id:"dp7", tipo:"Provérbio popular", linhas:[["Cão","que","ladra","não","morde."]],
+   dica:"É sobre quem ameaça muito, mas raramente faz algo de fato.",
+   explicacao:"Provérbio popular sobre ameaças vazias."},
+  {id:"dp8", tipo:"Provérbio popular", linhas:[["Mais","vale","um","pássaro","na","mão"],["do","que","dois","voando."]],
+   dica:"Ensina que é melhor ter algo certo do que arriscar por algo maior e incerto.",
+   explicacao:"Provérbio popular sobre valorizar o que já se tem."},
+  {id:"po1", tipo:"Mini-poema", linhas:[["A","chuva","cai","bem","devagar,"],["o","sol","depois","vai","despontar."]],
+   dica:"Fala sobre um dia de chuva que termina com sol.",
+   explicacao:"Mini-poema original sobre a passagem da chuva para o sol."},
+  {id:"po2", tipo:"Mini-poema", linhas:[["No","jardim","nasce","uma","flor,"],["pequena,","cheia","de","cor."]],
+   dica:"Descreve uma florzinha nova nascendo em um jardim.",
+   explicacao:"Mini-poema original sobre o nascimento de uma flor."},
+  {id:"po3", tipo:"Mini-poema", linhas:[["O","livro","aberto","na","mesa"],["guarda","um","mundo","de","beleza."]],
+   dica:"Fala sobre o valor de um livro aberto à espera de ser lido.",
+   explicacao:"Mini-poema original sobre o encanto da leitura."},
+  {id:"po4", tipo:"Mini-poema", linhas:[["O","tempo","passa","ligeiro,"],["não","espera","o","dia","inteiro."]],
+   dica:"É sobre como o tempo passa rápido e não espera por ninguém.",
+   explicacao:"Mini-poema original sobre a passagem do tempo."},
+  {id:"po5", tipo:"Mini-poema", linhas:[["A","lua","brilha","no","céu","escuro,"],["guiando","quem","busca","um","caminho","seguro."]],
+   dica:"Fala sobre a lua iluminando a noite para quem precisa de orientação.",
+   explicacao:"Mini-poema original sobre a lua como guia na escuridão."},
+];
+/* =========================================================
+   ESTADO / PERSISTÊNCIA
+   ========================================================= */
+const STORAGE_KEY = "monte_a_frase_v2";
+const ORDER = CHAPTERS.map(c=>c.id);
+
+function defaultState(){
+  const stats={};
+  ORDER.forEach(id=>stats[id]={acertos:0,erros:0,dicas:0,melhor:0});
+  stats.daily={acertos:0,erros:0,dicas:0,melhor:0};
+  return {unlocked:ORDER.length-1, score:0, solved:{}, stats,
+    daily:{lastSolvedDate:null, streak:0, melhorStreak:0, tentativasHoje:0, dicasHoje:0, pontosHoje:0}
+  };
+}
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const d=JSON.parse(raw);
+      if(d && typeof d.unlocked==="number" && d.stats && d.solved){
+        ORDER.forEach(id=>{ if(!d.stats[id]) d.stats[id]={acertos:0,erros:0,dicas:0,melhor:0}; });
+        if(!d.stats.daily) d.stats.daily={acertos:0,erros:0,dicas:0,melhor:0};
+        if(typeof d.score!=="number") d.score=0;
+        if(!d.daily) d.daily={lastSolvedDate:null, streak:0, melhorStreak:0, tentativasHoje:0, dicasHoje:0, pontosHoje:0};
+        d.unlocked = ORDER.length-1; // todos os capítulos sempre liberados
+        return d;
+      }
+    }
+  }catch(e){}
+  return defaultState();
+}
+function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+
+let state = loadState();
+
+/* =========================================================
+   DESAFIO DO DIA — sorteio determinístico pela data
+   ========================================================= */
+function todayDateStr(d){
+  d = d || new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function yesterdayDateStr(){
+  const d=new Date();
+  d.setDate(d.getDate()-1);
+  return todayDateStr(d);
+}
+function hashStr(s){
+  let h=0;
+  for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; }
+  return h;
+}
+function todaysDailyText(){
+  const idx = hashStr(todayDateStr()) % DAILY_TEXTS.length;
+  return DAILY_TEXTS[idx];
+}
+function buildDailyFrase(txt){
+  const lineLens = txt.linhas.map(l=>l.length);
+  const blocos = txt.linhas.flat();
+  return {
+    id: txt.id, blocos, respostas:[blocos.map((_,i)=>i)], distratores:[],
+    explicacao: txt.explicacao, dica: txt.dica, tipo: txt.tipo, lineLens,
+  };
+}
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+const $ = id => document.getElementById(id);
+function shuffle(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+let toastTimer=null;
+function toast(msg){
+  const t=$("toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),2000);
+}
+function showScreen(name){
+  ["home","game","summary","daily-result"].forEach(s=>{
+    $("screen-"+s).classList.toggle("active", s===name);
+  });
+}
+function updateScoreHud(){ $("hudScore").textContent = state.score+" pts"; }
+
+/* =========================================================
+   TELA HOME / SUMÁRIO
+   ========================================================= */
+let selectedChapter = null;
+
+function renderHome(){
+  const toc=$("toc");
+  toc.innerHTML="";
+  let firstUnlockedFound=false;
+  CHAPTERS.forEach((ch,idx)=>{
+    const locked = idx>state.unlocked;
+    const row=document.createElement("div");
+    row.className="toc-row"+(locked?" locked":"");
+    const st=state.stats[ch.id];
+    const starsCount = st.melhor>=90?3 : st.melhor>=70?2 : st.melhor>=40?1:0;
+    const stars = "★".repeat(starsCount)+"☆".repeat(3-starsCount);
+    row.innerHTML = `
+      <span class="num">${String(idx+1).padStart(2,"0")}</span>
+      <span class="info">
+        <span class="label">${ch.nome}</span>
+        <span class="desc">${ch.desc}</span>
+      </span>
+      ${locked
+        ? `<svg class="lock-icon" viewBox="0 0 24 24"><path d="M6 11V8a6 6 0 0 1 12 0v3M5 11h14v10H5z"/></svg>`
+        : `<span class="stars">${stars}</span>`}
+    `;
+    toc.appendChild(row);
+    if(!locked){
+      row.addEventListener("click",()=>{
+        selectedChapter = ch.id;
+        document.querySelectorAll(".toc-row").forEach(r=>r.classList.remove("selected"));
+        row.classList.add("selected");
+        $("btnJogar").disabled=false;
+      });
+      if(!firstUnlockedFound && idx===state.unlocked){
+        firstUnlockedFound=true;
+      }
+    }
+  });
+  if(!selectedChapter){
+    selectedChapter = ORDER[0];
+  }
+  const sel = toc.children[CHAPTERS.findIndex(c=>c.id===selectedChapter)];
+  if(sel){ sel.classList.add("selected"); }
+  $("btnJogar").disabled=false;
+
+  const totalAcertos = ORDER.reduce((s,id)=>s+state.stats[id].acertos,0);
+  $("homeStats").textContent = `${state.score} pts · ${totalAcertos} acertos no total`;
+  renderDailyCard();
+  updateScoreHud();
+}
+
+$("btnJogar").addEventListener("click", ()=> startChapter(selectedChapter));
+$("btnHome").addEventListener("click", ()=>{ renderHome(); showScreen("home"); });
+$("btnBackHome").addEventListener("click", ()=>{ renderHome(); showScreen("home"); });
+$("btnReset").addEventListener("click", ()=>{
+  if(confirm("Apagar todo o progresso salvo?")){
+    state=defaultState();
+    saveState();
+    renderHome();
+    toast("Progresso apagado.");
+  }
+});
+
+/* =========================================================
+   PARTIDA (CAPÍTULO)
+   ========================================================= */
+let game=null; // {chapterId, phrases, current, acertos, erros, dicas, streak, pontosGanhos}
+
+function getPhrasesForChapter(id){
+  const pool = FRASES[id]||[];
+  const available = pool.filter(f => state.solved[id+"_"+f.id] !== true);
+  const list = available.length>=4 ? available : pool;
+  const qtd = CHAPTERS.find(c=>c.id===id).qtd;
+  return shuffle(list).slice(0, Math.min(qtd, pool.length));
+}
+
+function startChapter(id){
+  game = {
+    chapterId:id,
+    phrases:getPhrasesForChapter(id),
+    current:0,
+    acertos:0, erros:0, dicas:0,
+    streak:0,
+    pontosGanhos:0,
+  };
+  showScreen("game");
+  loadPhrase();
+}
+
+/* =========================================================
+   ESTADO DA FRASE ATUAL
+   ========================================================= */
+let slots=[];     // array length N: bloco-index ou null
+let bank=[];      // array de bloco-index ainda não posicionados
+let hintUsed=false;
+
+function currentFrase(){ return game.phrases[game.current]; }
+
+// value >=0 refere-se a frase.blocos[value]; value<0 refere-se a uma ficha-armadilha:
+// frase.distratores[-value-1]. Isso permite misturar palavras certas e erradas no banco.
+function tileText(frase, value){
+  return value>=0 ? frase.blocos[value] : frase.distratores[-value-1];
+}
+function fullBank(frase){
+  const distr = frase.distratores||[];
+  return [...frase.blocos.map((_,i)=>i), ...distr.map((_,j)=>-(j+1))];
+}
+
+function loadPhrase(){
+  const frase = currentFrase();
+  hintUsed=false;
+  $("correction").classList.remove("show");
+  slots = frase.blocos.map(()=>null);
+  bank = shuffle(fullBank(frase));
+  render();
+  updateHeader();
+}
+
+function updateHeader(){
+  if(game.chapterId==="daily"){
+    const frase = currentFrase();
+    $("chapterTag").innerHTML = `Desafio do dia · <b>${frase.tipo}</b>`;
+    $("progressFill").style.width = "0%";
+    $("streakNote").textContent = state.daily.streak>0 ? `sequência atual: ${state.daily.streak} dia(s)` : "";
+    if(frase.dica){
+      $("clueBox").style.display="block";
+      $("clueText").textContent = frase.dica;
+    }else{
+      $("clueBox").style.display="none";
+    }
+  }else{
+    const ch = CHAPTERS.find(c=>c.id===game.chapterId);
+    $("chapterTag").innerHTML = `Capítulo ${CHAPTERS.findIndex(c=>c.id===game.chapterId)+1} · ${ch.nome} — <b>frase ${game.current+1} de ${game.phrases.length}</b>`;
+    $("progressFill").style.width = (game.current/game.phrases.length*100)+"%";
+    $("streakNote").textContent = game.streak>=2 ? `sequência de ${game.streak} acertos!` : "";
+    $("clueBox").style.display="none";
+  }
+  updateScoreHud();
+}
+
+function render(){
+  const frase = currentFrase();
+
+  const line=$("sentenceLine");
+  line.innerHTML="";
+  const lens = frase.lineLens || [slots.length];
+  let cursor=0;
+  lens.forEach(len=>{
+    const row=document.createElement("div");
+    row.className="sentence-row";
+    for(let k=0;k<len;k++){
+      const idx=cursor+k;
+      const val=slots[idx];
+      const cell=document.createElement("div");
+      cell.className="slot-cell"+(val!==null?" filled":"");
+      cell.dataset.index=idx;
+      cell.tabIndex=0;
+      cell.setAttribute("role","button");
+      if(val===null){
+        cell.innerHTML=`<span class="dash" aria-hidden="true"></span>`;
+        cell.setAttribute("aria-label","espaço "+(idx+1)+" vazio");
+      }else{
+        const txt=tileText(frase,val);
+        const tile=makeTile(txt, val);
+        cell.appendChild(tile);
+        cell.setAttribute("aria-label","posição "+(idx+1)+": "+txt);
+      }
+      cell.addEventListener("keydown", e=>{
+        if(e.key==="Enter"||e.key===" "){ e.preventDefault(); tapSlot(idx); }
+      });
+      row.appendChild(cell);
+    }
+    line.appendChild(row);
+    cursor+=len;
+  });
+
+  const bankEl=$("wordBank");
+  bankEl.innerHTML="";
+  bank.forEach(val=>{
+    const tile=makeTile(tileText(frase,val), val);
+    bankEl.appendChild(tile);
+  });
+
+  $("btnHint").disabled = hintUsed;
+}
+
+function makeTile(text, value){
+  const t=document.createElement("div");
+  t.className="tile";
+  t.textContent=text;
+  t.dataset.bloco=value;
+  t.tabIndex=0;
+  t.setAttribute("role","button");
+  t.setAttribute("aria-label","ficha: "+text);
+  wireTile(t);
+  return t;
+}
+
+/* =========================================================
+   INTERAÇÃO: TOQUE / CLIQUE
+   ========================================================= */
+function tapBank(blocoIdx){
+  const idx = slots.indexOf(null);
+  if(idx===-1){ toast("Todos os espaços já estão preenchidos."); return; }
+  slots[idx]=blocoIdx;
+  bank = bank.filter(b=>b!==blocoIdx);
+  render();
+}
+function tapSlot(slotIdx){
+  const val = slots[slotIdx];
+  if(val===null) return;
+  slots[slotIdx]=null;
+  bank.push(val);
+  render();
+}
+
+/* =========================================================
+   INTERAÇÃO: ARRASTAR (Pointer Events)
+   ========================================================= */
+let drag=null; // {tile, blocoIdx, from:'bank'|'slot', slotIdx, startX, startY, moved, ghost}
+
+function wireTile(tile){
+  tile.addEventListener("pointerdown", onTileDown);
+  tile.addEventListener("keydown", e=>{
+    if(e.key==="Enter"||e.key===" "){
+      e.preventDefault();
+      const parentSlot = tile.closest(".slot-cell");
+      if(parentSlot) tapSlot(parseInt(parentSlot.dataset.index,10));
+      else tapBank(parseInt(tile.dataset.bloco,10));
+    }
+  });
+}
+
+function onTileDown(e){
+  const tile=e.currentTarget;
+  tile.setPointerCapture(e.pointerId);
+  const parentSlot = tile.closest(".slot-cell");
+  drag = {
+    tile,
+    blocoIdx: parseInt(tile.dataset.bloco,10),
+    from: parentSlot ? "slot" : "bank",
+    slotIdx: parentSlot ? parseInt(parentSlot.dataset.index,10) : null,
+    startX: e.clientX, startY: e.clientY,
+    moved:false, ghost:null, pointerId:e.pointerId,
+  };
+  tile.addEventListener("pointermove", onTileMove);
+  tile.addEventListener("pointerup", onTileUp);
+  tile.addEventListener("pointercancel", onTileUp);
+}
+
+function onTileMove(e){
+  if(!drag) return;
+  const dx=e.clientX-drag.startX, dy=e.clientY-drag.startY;
+  if(!drag.moved && Math.hypot(dx,dy)>6){
+    drag.moved=true;
+    drag.tile.classList.add("dragging");
+    const g=document.createElement("div");
+    g.className="ghost-tile";
+    g.textContent=drag.tile.textContent;
+    document.body.appendChild(g);
+    drag.ghost=g;
+  }
+  if(drag.moved && drag.ghost){
+    drag.ghost.style.left=e.clientX+"px";
+    drag.ghost.style.top=e.clientY+"px";
+    highlightDropTarget(e.clientX, e.clientY);
+  }
+}
+
+function highlightDropTarget(x,y){
+  document.querySelectorAll(".drop-target").forEach(el=>el.classList.remove("drop-target"));
+  const el=document.elementFromPoint(x,y);
+  if(!el) return;
+  const cell=el.closest(".slot-cell");
+  if(cell){ cell.classList.add("drop-target"); return; }
+  const bankEl=el.closest(".word-bank");
+  if(bankEl){ bankEl.classList.add("drop-target"); }
+}
+
+function onTileUp(e){
+  if(!drag) return;
+  const d=drag;
+  d.tile.removeEventListener("pointermove", onTileMove);
+  d.tile.removeEventListener("pointerup", onTileUp);
+  d.tile.removeEventListener("pointercancel", onTileUp);
+  document.querySelectorAll(".drop-target").forEach(el=>el.classList.remove("drop-target"));
+
+  if(!d.moved){
+    // toque simples
+    if(d.from==="slot") tapSlot(d.slotIdx);
+    else tapBank(d.blocoIdx);
+    drag=null;
+    return;
+  }
+
+  if(d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+
+  const el=document.elementFromPoint(e.clientX, e.clientY);
+  const targetCell = el && el.closest(".slot-cell");
+  const targetBank = el && el.closest(".word-bank");
+
+  if(targetCell){
+    const targetIdx=parseInt(targetCell.dataset.index,10);
+    if(d.from==="bank"){
+      if(slots[targetIdx]===null){
+        slots[targetIdx]=d.blocoIdx;
+        bank=bank.filter(b=>b!==d.blocoIdx);
+      }else{
+        const displaced=slots[targetIdx];
+        slots[targetIdx]=d.blocoIdx;
+        bank=bank.filter(b=>b!==d.blocoIdx);
+        bank.push(displaced);
+      }
+    }else{ // from slot
+      if(targetIdx!==d.slotIdx){
+        const other=slots[targetIdx];
+        slots[targetIdx]=d.blocoIdx;
+        slots[d.slotIdx]=other;
+      }
+    }
+  }else if(targetBank){
+    if(d.from==="slot"){
+      slots[d.slotIdx]=null;
+      bank.push(d.blocoIdx);
+    }
+    // se já veio do banco, não faz nada (solta no mesmo lugar)
+  }
+  render();
+  drag=null;
+}
+
+/* =========================================================
+   DICA
+   ========================================================= */
+$("btnHint").addEventListener("click", ()=>{
+  if(hintUsed){ toast("Você já usou a dica nesta frase."); return; }
+  const frase=currentFrase();
+  const correct=frase.respostas[0];
+  const idx = slots.findIndex((v,i)=> v!==correct[i]);
+  if(idx===-1){ toast("Sua frase já está certa — toque em Verificar!"); return; }
+  const needed = correct[idx];
+  const posInSlots = slots.indexOf(needed);
+
+  if(posInSlots!==-1 && posInSlots!==idx){
+    const cell=document.querySelector(`.slot-cell[data-index="${posInSlots}"] .tile`);
+    if(cell) pulse(cell);
+    toast("A ficha destacada precisa ir para outra posição.");
+  }else{
+    const tile=[...document.querySelectorAll("#wordBank .tile")].find(t=>parseInt(t.dataset.bloco,10)===needed);
+    if(tile) pulse(tile);
+    toast("Arraste a ficha destacada até o espaço destacado.");
+  }
+  const destCell=document.querySelector(`.slot-cell[data-index="${idx}"]`);
+  if(destCell) pulse(destCell);
+
+  hintUsed=true;
+  game.dicas++;
+  state.score=Math.max(0, state.score-20);
+  state.stats[game.chapterId].dicas++;
+  saveState();
+  $("btnHint").disabled=true;
+  updateScoreHud();
+});
+function pulse(el){
+  el.classList.add("pulse");
+  setTimeout(()=>el.classList.remove("pulse"), 2000);
+}
+
+/* =========================================================
+   VERIFICAR
+   ========================================================= */
+$("btnVerify").addEventListener("click", ()=>{
+  if(slots.includes(null)){ toast("Preencha todos os espaços antes de verificar."); return; }
+  const frase=currentFrase();
+  const correctAny = frase.respostas.some(r => r.join(",")===slots.join(","));
+  if(correctAny) handleCorrect(frase);
+  else handleWrong(frase);
+});
+
+function handleCorrect(frase){
+  game.acertos++;
+  game.streak++;
+  let pts = game.chapterId==="daily" ? 200 : 100;
+  const mult = game.streak>=3 ? 1.5 : (game.streak===2 ? 1.25 : 1);
+  pts = Math.round(pts*mult);
+  game.pontosGanhos += pts;
+  state.score += pts;
+  state.solved[game.chapterId+"_"+frase.id]=true;
+  state.stats[game.chapterId].acertos++;
+  saveState();
+  showCorrection(true, pts, frase, mult);
+}
+function handleWrong(frase){
+  game.erros++;
+  game.streak=0;
+  state.stats[game.chapterId].erros++;
+  saveState();
+  document.querySelectorAll(".slot-cell").forEach(c=>{
+    c.style.animation="none"; void c.offsetWidth; c.style.animation="";
+  });
+  showCorrection(false, 0, frase, 1);
+}
+
+function buildRecapHTML(frase, order){
+  if(frase.lineLens){
+    let c=0; const parts=[];
+    frase.lineLens.forEach(len=>{
+      parts.push(order.slice(c,c+len).map(i=>frase.blocos[i]).join(" "));
+      c+=len;
+    });
+    return parts.join("<br>");
+  }
+  return order.map(i=>frase.blocos[i]).join(" ") + ".";
+}
+
+function showCorrection(correct, pts, frase, mult){
+  const mark=$("verdictMark");
+  const text=$("verdictText");
+  if(correct){
+    mark.setAttribute("class","verdict-mark good");
+    mark.innerHTML=`<path d="M6 21 L16 30 L34 10"/>`;
+    text.className="verdict-text good";
+    text.textContent="Muito bem!";
+    $("verdictPoints").textContent = mult>1 ? `+${pts} pts (sequência x${mult})` : `+${pts} pts`;
+  }else{
+    mark.setAttribute("class","verdict-mark bad");
+    mark.innerHTML=`<path d="M10 10 L30 30 M30 10 L10 30"/>`;
+    text.className="verdict-text bad";
+    text.textContent="Quase lá!";
+    $("verdictPoints").textContent="0 pts — veja a correção";
+  }
+  const correctOrder=frase.respostas[0];
+  $("recapFrase").innerHTML = buildRecapHTML(frase, correctOrder);
+  $("explicacaoTexto").textContent = frase.explicacao;
+  $("btnContinue").textContent = correct ? "Próxima frase" : "Tentar de novo";
+  $("correction").classList.add("show");
+  updateHeader();
+}
+
+$("btnContinue").addEventListener("click", ()=>{
+  const wasCorrect = $("verdictText").classList.contains("good");
+  $("correction").classList.remove("show");
+  if(wasCorrect){
+    if(game.current < game.phrases.length-1){
+      game.current++;
+      loadPhrase();
+    }else{
+      finishChapter();
+    }
+  }else{
+    loadPhrase();
+  }
+});
+
+$("btnClear").addEventListener("click", ()=>{
+  const frase=currentFrase();
+  slots = frase.blocos.map(()=>null);
+  // Recoloca todas as fichas no banco e embaralha
+  bank = shuffle(fullBank(frase));
+  render();
+});
+
+/* =========================================================
+   FIM DE CAPÍTULO
+   ========================================================= */
+function finishChapter(){
+  if(game.chapterId==="daily"){ finishDaily(); return; }
+  const total = game.acertos+game.erros;
+  const pct = total ? Math.round(game.acertos/total*100) : 0;
+  const idx = ORDER.indexOf(game.chapterId);
+  state.stats[game.chapterId].melhor = Math.max(state.stats[game.chapterId].melhor, pct);
+  if(pct>=60 && idx<ORDER.length-1 && state.unlocked<idx+1){
+    state.unlocked = idx+1;
+    toast("Novo capítulo desbloqueado!");
+  }
+  saveState();
+
+  $("summaryGrade").textContent = pct+"%";
+  $("repAcertos").textContent = game.acertos;
+  $("repErros").textContent = game.erros;
+  $("repDicas").textContent = game.dicas;
+  $("repPontos").textContent = game.pontosGanhos;
+  $("teacherRemark").textContent =
+    pct>=90 ? "Excelente! Você domina este capítulo." :
+    pct>=60 ? "Bom trabalho — continue praticando." :
+    "Vale a pena refazer este capítulo com calma.";
+  showScreen("summary");
+}
+$("btnRepeat").addEventListener("click", ()=> startChapter(game.chapterId));
+
+/* =========================================================
+   DESAFIO DO DIA
+   ========================================================= */
+function startDaily(){
+  const txt = todaysDailyText();
+  const frase = buildDailyFrase(txt);
+  game = { chapterId:"daily", phrases:[frase], current:0, acertos:0, erros:0, dicas:0, streak:0, pontosGanhos:0 };
+  showScreen("game");
+  loadPhrase();
+}
+
+function finishDaily(){
+  const today = todayDateStr();
+  const yesterday = yesterdayDateStr();
+  if(state.daily.lastSolvedDate===yesterday){
+    state.daily.streak = (state.daily.streak||0)+1;
+  }else if(state.daily.lastSolvedDate!==today){
+    state.daily.streak = 1;
+  }
+  state.daily.lastSolvedDate = today;
+  state.daily.melhorStreak = Math.max(state.daily.melhorStreak||0, state.daily.streak);
+  state.daily.tentativasHoje = game.erros+1;
+  state.daily.dicasHoje = game.dicas;
+  state.daily.pontosHoje = game.pontosGanhos;
+  saveState();
+  renderDailyResult();
+  showScreen("daily-result");
+}
+
+function renderDailyResult(){
+  $("dailyStreakNum").textContent = state.daily.streak||0;
+  $("dailyTentativas").textContent = state.daily.tentativasHoje||1;
+  $("dailyDicas").textContent = state.daily.dicasHoje||0;
+  $("dailyMelhor").textContent = state.daily.melhorStreak||0;
+  $("dailyPontos").textContent = state.daily.pontosHoje||0;
+  const txt = todaysDailyText();
+  const frase = buildDailyFrase(txt);
+  let c=0; const linhas=[];
+  frase.lineLens.forEach(len=>{ linhas.push(frase.blocos.slice(c,c+len).join(" ")); c+=len; });
+  $("dailyRecap").innerHTML = `“${linhas.join("<br>")}”<br><br>${txt.explicacao}`;
+}
+
+function renderDailyCard(){
+  const today = todayDateStr();
+  if(state.daily.lastSolvedDate===today){
+    $("dailyCardSub").textContent = `Resolvido hoje — sequência de ${state.daily.streak} dia(s). Volte amanhã!`;
+    $("btnDailyPlay").textContent = "Ver resultado";
+  }else{
+    $("dailyCardSub").textContent = state.daily.streak>0
+      ? `Sequência atual: ${state.daily.streak} dia(s). Não deixe zerar!`
+      : `Monte o mini-texto a partir de uma pista.`;
+    $("btnDailyPlay").textContent = "Jogar";
+  }
+}
+$("btnDailyPlay").addEventListener("click", ()=>{
+  if(state.daily.lastSolvedDate===todayDateStr()){
+    renderDailyResult();
+    showScreen("daily-result");
+  }else{
+    startDaily();
+  }
+});
+$("btnDailyBackHome").addEventListener("click", ()=>{ renderHome(); showScreen("home"); });
+
+/* =========================================================
+   INÍCIO
+   ========================================================= */
+renderHome();
+showScreen("home");
+
+})();
+</script>
+</body>
+</html>
