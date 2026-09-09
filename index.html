@@ -3,20 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Monte a Frase</title>
+<title>Monte a Frase - o jogo de português que pega no seu pé</title>
+<meta name="description" content="Monte frases, desvie das pegadinhas de crase, concordância e regência, e ainda descubra por que a resposta certa é certa. Rapidinho e viciante.">
 <style>
   :root{
-    --bg:#ffffff;
-    --bg-soft:#f6f7f8;
-    --border:#d3d6da;
-    --border-strong:#878a8c;
-    --text:#1a1a1b;
-    --text-soft:#787c7f;
-    --green:#6aaa64;
-    --green-dark:#4b8a46;
-    --yellow:#c9b458;
-    --yellow-soft:#fbf3c8;
-    --radius:4px;
+    --bg:#1f1e2b;
+    --bg-elevated:#2a2938;
+    --bg-elevated-2:#343349;
+    --border:#403e54;
+    --border-strong:#5b5872;
+    --text:#f3f0e8;
+    --text-soft:#a29dc0;
+    --accent:#e4a83c;
+    --accent-dark:#b9821f;
+    --accent-ink:#241d0d;
+    --good:#8cbf74;
+    --bad:#e5736a;
+    --radius:10px;
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;}
@@ -29,30 +32,37 @@
   }
   button{font-family:inherit;}
   a{color:inherit;}
-  :focus-visible{outline:2px solid var(--text); outline-offset:2px;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
 
   /* ============ HEADER ============ */
   .topbar{
-    border-bottom:1px solid var(--border);
     position:sticky; top:0; background:var(--bg); z-index:10;
   }
   .topbar-inner{
-    max-width:500px; margin:0 auto; height:52px;
+    max-width:500px; margin:0 auto; min-height:60px;
     display:flex; align-items:center; justify-content:space-between;
-    padding:0 14px;
+    padding:10px 14px; gap:8px;
   }
   .wordmark{
-    font-size:1.3rem; font-weight:700; letter-spacing:.05em;
-    margin:0; text-align:center; flex:1;
+    font-size:1.4rem; font-weight:800; letter-spacing:.04em;
+    margin:0; text-align:center; flex:1; color:var(--text);
+    white-space:nowrap;
   }
+  .header-side{display:flex; align-items:center; gap:8px;}
+  .header-side.left{justify-content:flex-start;}
+  .header-side.right{justify-content:flex-end;}
   .icon-btn{
-    background:none; border:none; font-size:1.3rem; color:var(--text);
-    cursor:pointer; padding:6px 8px; line-height:1; border-radius:var(--radius);
+    background:none; border:1.5px solid var(--border-strong); color:var(--text);
+    font-size:1.05rem; font-weight:700; cursor:pointer; line-height:1;
+    width:38px; height:38px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:background .12s, border-color .12s;
   }
-  .icon-btn:hover{background:var(--bg-soft);}
+  .icon-btn:hover{background:var(--bg-elevated); border-color:var(--accent);}
   .score-pill{
-    font-weight:700; font-size:.85rem; color:var(--text-soft);
-    min-width:50px; text-align:right; padding:6px 4px;
+    font-weight:800; font-size:.8rem; color:var(--accent);
+    border:1.5px solid var(--border-strong); border-radius:999px;
+    padding:8px 12px; white-space:nowrap;
   }
 
   /* ============ LAYOUT ============ */
@@ -62,36 +72,40 @@
   @keyframes fadein{from{opacity:0;} to{opacity:1;}}
 
   .eyebrow{
-    font-size:.78rem; font-weight:700; text-transform:uppercase;
-    letter-spacing:.06em; color:var(--text-soft); margin:0 0 16px;
+    font-size:.78rem; font-weight:800; text-transform:uppercase;
+    letter-spacing:.08em; color:var(--text-soft); margin:0 0 14px;
   }
 
   /* ============ SUMÁRIO DE CAPÍTULOS ============ */
-  .toc{display:flex; flex-direction:column; gap:8px; margin-bottom:20px;}
+  .toc{display:flex; flex-direction:column; gap:10px; margin-bottom:22px;}
   .toc-row{
+    background:var(--bg-elevated);
     border:2px solid var(--border); border-radius:var(--radius);
-    padding:12px 14px; display:flex; align-items:center; gap:12px;
-    cursor:pointer; background:none; width:100%; text-align:left;
+    padding:13px 14px; display:flex; align-items:center; gap:12px;
+    cursor:pointer; width:100%; text-align:left;
     transition:border-color .12s, background .12s;
   }
   .toc-row:hover:not(.locked){border-color:var(--border-strong);}
-  .toc-row.selected{border-color:var(--text); background:var(--bg-soft);}
-  .toc-row.locked{opacity:.5; cursor:not-allowed;}
-  .toc-row .num{font-weight:700; color:var(--text-soft); font-size:.85rem; width:18px; flex-shrink:0;}
+  .toc-row.selected{border-color:var(--accent); background:var(--bg-elevated-2);}
+  .toc-row.locked{opacity:.45; cursor:not-allowed;}
+  .toc-row .num{font-weight:800; color:var(--text-soft); font-size:.85rem; width:18px; flex-shrink:0;}
   .toc-row .info{flex:1; min-width:0;}
-  .toc-row .label{font-weight:700; font-size:.95rem; display:block;}
+  .toc-row .label{font-weight:700; font-size:.95rem; display:block; color:var(--text);}
   .toc-row .desc{font-size:.78rem; color:var(--text-soft); display:block; margin-top:1px;}
-  .toc-row .stars{color:var(--green-dark); font-size:.9rem; letter-spacing:1px; flex-shrink:0;}
+  .toc-row .stars{color:var(--accent); font-size:.9rem; letter-spacing:1px; flex-shrink:0;}
+  .stars{color:var(--accent); font-size:.9rem; letter-spacing:1px; flex-shrink:0;}
   .lock-icon{width:16px; height:16px; flex-shrink:0;}
   .lock-icon path{fill:none; stroke:var(--text-soft); stroke-width:1.8;}
 
   .btn-primary{
-    width:100%; background:var(--text); color:#fff; border:none;
-    border-radius:var(--radius); padding:13px; font-weight:700;
+    width:100%; background:var(--accent); color:var(--accent-ink); border:none;
+    border-radius:var(--radius); padding:15px; font-weight:800;
     font-size:.95rem; letter-spacing:.02em; cursor:pointer;
+    box-shadow:0 3px 0 var(--accent-dark);
+    transition:transform .08s, box-shadow .08s, background .12s;
   }
-  .btn-primary:disabled{background:var(--border); color:var(--text-soft); cursor:not-allowed;}
-  .btn-primary:not(:disabled):hover{background:#000;}
+  .btn-primary:active{transform:translateY(3px); box-shadow:0 0 0 var(--accent-dark);}
+  .btn-primary:disabled{background:var(--border); color:var(--text-soft); cursor:not-allowed; box-shadow:none;}
   .meta-line{font-size:.8rem; color:var(--text-soft); margin:12px 0 0; text-align:center;}
   .link-btn{
     background:none; border:none; color:var(--text-soft); font-size:.82rem;
@@ -99,120 +113,199 @@
   }
   .link-btn:hover{color:var(--text);}
 
+  /* ============ DESAFIO DO DIA ============ */
+  .daily-card{
+    background:var(--bg-elevated);
+    border:2px solid var(--accent); border-radius:var(--radius);
+    padding:15px; display:flex; align-items:center; gap:12px; justify-content:space-between;
+  }
+  .daily-card-text{display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .daily-card-title{font-weight:800; font-size:.95rem; color:var(--text);}
+  .daily-card-sub{font-size:.78rem; color:var(--text-soft);}
+  .daily-card .btn-outline{flex-shrink:0;}
+
   /* ============ JOGO ============ */
   .chapter-tag{
-    font-size:.75rem; font-weight:700; text-transform:uppercase;
-    letter-spacing:.04em; color:var(--text-soft);
+    font-size:.75rem; font-weight:800; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--text-soft);
   }
-  .progress-track{height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin:8px 0 4px;}
-  .progress-fill{height:100%; background:var(--green); width:0%; transition:width .3s ease;}
-  .streak-note{font-size:.8rem; font-weight:700; color:var(--green-dark); min-height:1.3em; margin:0 0 10px;}
+  .chapter-tag b{color:var(--accent);}
+  .progress-track{height:5px; background:var(--border); border-radius:3px; overflow:hidden; margin:10px 0 4px;}
+  .progress-fill{height:100%; background:var(--accent); width:0%; transition:width .3s ease;}
+  .streak-note{font-size:.8rem; font-weight:700; color:var(--accent); min-height:1.3em; margin:0 0 10px;}
 
   .sentence-line{
     padding:2px 0 18px;
-    border-bottom:1px solid var(--border); margin-bottom:20px; min-height:52px;
+    border-bottom:2px solid var(--border); margin-bottom:20px; min-height:52px;
   }
   .sentence-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;}
   .sentence-row:last-child{margin-bottom:0;}
   .clue-box{
-    background:var(--yellow-soft); border-left:3px solid var(--yellow);
-    border-radius:var(--radius); padding:10px 12px; font-size:.88rem;
-    margin-bottom:16px; line-height:1.4;
+    background:var(--bg-elevated); border-left:4px solid var(--accent);
+    border-radius:var(--radius); padding:11px 13px; font-size:.88rem;
+    margin-bottom:18px; line-height:1.4; color:var(--text);
   }
-  .clue-box strong{display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:#8a6d1f; margin-bottom:3px;}
-  .daily-card{
-    border:2px solid var(--text); border-radius:var(--radius);
-    padding:14px; display:flex; align-items:center; gap:12px; justify-content:space-between;
-  }
-  .daily-card-text{display:flex; flex-direction:column; gap:2px; min-width:0;}
-  .daily-card-title{font-weight:700; font-size:.95rem;}
-  .daily-card-sub{font-size:.78rem; color:var(--text-soft);}
-  .daily-card .btn-outline{flex-shrink:0;}
+  .clue-box strong{display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin-bottom:3px;}
+
   .slot-cell{
     min-width:44px; min-height:44px; border:2px dashed var(--border);
-    border-radius:var(--radius); display:flex; align-items:center; justify-content:center;
+    border-radius:8px; display:flex; align-items:center; justify-content:center;
     padding:2px; transition:border-color .15s, background .15s;
   }
   .slot-cell .dash{width:16px; height:2px; background:var(--border);}
   .slot-cell.filled{border-style:solid; border-color:transparent; padding:0;}
-  .slot-cell.drop-target{border-color:var(--text); background:var(--bg-soft); border-style:solid;}
-  .slot-cell.pulse{animation:pulse-cell 1s ease 2;}
-  @keyframes pulse-cell{0%,100%{background:transparent;} 50%{background:var(--yellow-soft);}}
+  .slot-cell.drop-target{border-color:var(--accent); background:var(--bg-elevated); border-style:solid;}
+  .slot-cell.mark-wait{border-color:var(--accent); background:var(--bg-elevated);}
+  .slot-cell.slot-good{border-color:var(--good); background:var(--bg-elevated); animation:slotflash .35s ease;}
+  .slot-cell.slot-bad{border-color:var(--bad); background:rgba(229,115,106,.12); animation:slotflash .35s ease;}
+  @keyframes slotflash{from{transform:scale(1.04);} to{transform:scale(1);}}
 
   .bank-label{font-size:.78rem; color:var(--text-soft); margin:0 0 10px;}
   .word-bank{display:flex; flex-wrap:wrap; gap:10px; min-height:50px; border-radius:var(--radius); transition:background .15s;}
-  .word-bank.drop-target{background:var(--bg-soft);}
+  .word-bank.drop-target{background:var(--bg-elevated);}
 
   .tile{
-    background:#fff; border:2px solid var(--border-strong); color:var(--text);
-    font-weight:700; font-size:.9rem; padding:10px 14px; border-radius:var(--radius);
+    background:var(--bg-elevated); border:2px solid var(--border-strong); color:var(--text);
+    font-weight:700; font-size:.9rem; padding:10px 14px; border-radius:8px;
     cursor:grab; user-select:none; -webkit-user-select:none; touch-action:none;
     transition:border-color .1s;
   }
-  .tile:hover{border-color:var(--text);}
+  .tile:hover{border-color:var(--accent);}
   .slot-cell .tile{
-    border-color:var(--text); width:100%; height:100%;
+    border-color:var(--accent); width:100%; height:100%;
     display:flex; align-items:center; justify-content:center; text-align:center;
-    cursor:grab;
+    cursor:grab; background:var(--bg-elevated-2);
   }
   .tile.dragging{opacity:0;}
-  .tile.pulse{animation:pulse-tile 1s ease 2;}
-  @keyframes pulse-tile{0%,100%{box-shadow:none;} 50%{box-shadow:0 0 0 3px var(--yellow);}}
   .ghost-tile{
     position:fixed; z-index:200; pointer-events:none;
-    background:#fff; border:2px solid var(--text); color:var(--text);
-    font-weight:700; font-size:.9rem; padding:10px 14px; border-radius:var(--radius);
+    background:var(--bg-elevated-2); border:2px solid var(--accent); color:var(--text);
+    font-weight:700; font-size:.9rem; padding:10px 14px; border-radius:8px;
     transform:translate(-50%,-50%);
   }
 
-  .controls{display:flex; gap:10px; align-items:center; margin-top:2px;}
+  .controls{display:flex; gap:10px; align-items:center; margin-top:2px; flex-wrap:wrap;}
   .btn-outline{
-    background:#fff; border:2px solid var(--border-strong); color:var(--text);
+    background:transparent; border:1.5px solid var(--border-strong); color:var(--text);
     font-weight:700; font-size:.82rem; padding:10px 14px; border-radius:var(--radius);
-    cursor:pointer; white-space:nowrap;
+    cursor:pointer; white-space:nowrap; transition:border-color .12s;
   }
-  .btn-outline:hover{border-color:var(--text);}
+  .btn-outline:hover{border-color:var(--accent);}
   .btn-outline:disabled{opacity:.4; cursor:not-allowed; border-color:var(--border-strong);}
-  .controls .btn-primary{width:auto; flex:1; padding:10px 14px;}
+  .controls .btn-primary{width:auto; flex:1; padding:10px 14px; box-shadow:0 2px 0 var(--accent-dark);}
+  .controls .btn-outline{padding:10px 13px;}
 
   /* ============ CORREÇÃO ============ */
-  .correction{margin-top:24px; padding-top:18px; border-top:1px solid var(--border); display:none;}
+  .correction{margin-top:24px; padding-top:18px; border-top:2px solid var(--border); display:none;}
   .correction.show{display:block; animation:fadein .2s ease;}
   .verdict-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
   .verdict-mark{width:24px; height:24px; flex-shrink:0;}
   .verdict-mark path{fill:none; stroke-width:5; stroke-linecap:round; stroke-linejoin:round;}
-  .verdict-mark.good path{stroke:var(--green);}
+  .verdict-mark.good path{stroke:var(--good);}
   .verdict-mark.bad path{stroke:var(--text-soft);}
-  .verdict-text{font-weight:700; font-size:1.05rem;}
-  .verdict-text.good{color:var(--green-dark);}
+  .verdict-text{font-weight:800; font-size:1.05rem; color:var(--text);}
+  .verdict-text.good{color:var(--good);}
   .verdict-text.bad{color:var(--text);}
   .verdict-points{font-size:.78rem; color:var(--text-soft); margin-left:auto; white-space:nowrap;}
-  .recap-frase{font-size:.95rem; margin:0 0 10px;}
-  .explain-box{background:var(--bg-soft); border-radius:var(--radius); padding:10px 12px; font-size:.85rem; margin-bottom:16px; line-height:1.4;}
-  .explain-box strong{display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--text-soft); margin-bottom:3px;}
+  .recap-frase{font-size:.95rem; margin:0 0 10px; color:var(--text);}
+  .explain-box{background:var(--bg-elevated); border-radius:var(--radius); padding:11px 13px; font-size:.85rem; margin-bottom:16px; line-height:1.4; color:var(--text);}
+  .explain-box strong{display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin-bottom:3px;}
 
   /* ============ BOLETIM ============ */
-  .grade{font-size:2.8rem; font-weight:800; text-align:center; margin:4px 0 2px;}
+  .grade{font-size:2.8rem; font-weight:800; text-align:center; margin:4px 0 2px; color:var(--accent);}
   .grade-caption{text-align:center; font-size:.82rem; color:var(--text-soft); margin-bottom:22px;}
-  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:20px;}
-  .stat-box{text-align:center; border:1px solid var(--border); border-radius:var(--radius); padding:10px 4px;}
-  .stat-num{display:block; font-size:1.35rem; font-weight:800;}
+  .stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px;}
+  .stat-box{text-align:center; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); padding:11px 4px;}
+  .stat-num{display:block; font-size:1.35rem; font-weight:800; color:var(--text);}
   .stat-lbl{display:block; font-size:.62rem; color:var(--text-soft); text-transform:uppercase; letter-spacing:.02em; margin-top:2px;}
-  .teacher-remark{font-size:.92rem; text-align:center; margin-bottom:22px;}
+  .teacher-remark{font-size:.92rem; text-align:center; margin-bottom:22px; color:var(--text);}
   .summary-actions{display:flex; flex-direction:column; gap:10px; align-items:center;}
   .summary-actions .btn-primary{max-width:320px;}
 
+  /* ============ AJUDA (modal) ============ */
+  /* ============ PEGADINHA ============ */
+  .egg-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:500;
+    display:none; align-items:center; justify-content:center; padding:20px;
+    cursor:pointer;
+  }
+  .egg-backdrop.show{display:flex; animation:eggflash .25s ease;}
+  @keyframes eggflash{0%{background:#fff;} 100%{background:rgba(0,0,0,.85);}}
+  .egg-image{
+    max-width:min(90vw,340px); max-height:70vh; border-radius:14px;
+    box-shadow:0 0 0 6px var(--accent), 0 20px 60px rgba(0,0,0,.6);
+    animation:eggpop .35s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes eggpop{from{transform:scale(.3) rotate(-8deg); opacity:0;} to{transform:scale(1) rotate(0); opacity:1;}}
+
+  .help-backdrop{
+    position:fixed; inset:0; background:rgba(10,9,15,.65); z-index:400;
+    display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .help-backdrop.show{display:flex;}
+  .help-card{
+    background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px;
+    max-width:420px; width:100%; padding:22px; max-height:80vh; overflow:auto;
+  }
+  .help-card h2{font-size:1.05rem; margin:0 0 14px; color:var(--text); font-weight:800;}
+  .help-card ul{margin:0 0 18px; padding-left:20px; font-size:.88rem; line-height:1.65; color:var(--text);}
+  .help-card li{margin-bottom:7px;}
+  .help-card li b{color:var(--accent);}
+  .help-card h2:nth-of-type(2){margin-top:22px; padding-top:18px; border-top:1px solid var(--border);}
+  .settings-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:10px;}
+  .settings-row span{font-size:.9rem; color:var(--text);}
+  .font-size-group{display:flex; gap:6px;}
+  .music-controls{display:flex; align-items:center; gap:6px;}
+  .music-controls .btn-outline{padding:8px 12px; font-size:.85rem; min-width:38px; text-align:center;}
+  .vol-label{font-size:.72rem; color:var(--text-soft); min-width:30px; text-align:right;}
+  .font-size-group .btn-outline{padding:8px 12px; font-size:.8rem;}
+  .font-size-group .btn-outline.active, .btn-outline.active{border-color:var(--accent); color:var(--accent);}
+
+  /* ============ ESTATÍSTICAS ============ */
+  .title-badge-wrap{text-align:center; margin-bottom:4px;}
+  .title-badge{
+    display:inline-block; font-weight:800; color:var(--accent);
+    font-size:.95rem; border:1.5px solid var(--accent); border-radius:999px;
+    padding:7px 16px;
+  }
+  .chart-box{
+    background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius);
+    padding:14px; margin-bottom:4px;
+  }
+  .chart-empty{color:var(--text-soft); font-size:.85rem; text-align:center; padding:10px 0;}
+  .stats-chapter-row{
+    display:flex; align-items:center; gap:10px; padding:12px 4px;
+    border-bottom:1px dashed var(--border);
+  }
+  .stats-chapter-row:last-child{border-bottom:none;}
+  .stats-chapter-row .info{flex:1; min-width:0;}
+  .stats-chapter-row .label{font-weight:700; font-size:.9rem; display:block; color:var(--text);}
+  .stats-chapter-row .sub{font-size:.76rem; color:var(--text-soft);}
+  .stats-chapter-row.hardest .label::after{
+    content:"mais difícil pra você"; margin-left:8px; font-size:.65rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.03em; color:var(--accent);
+    border:1px solid var(--accent); border-radius:999px; padding:2px 7px; vertical-align:middle;
+  }
+  .badges-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:6px;}
+  .badge-pill{
+    border:1.5px solid var(--border-strong); border-radius:999px; padding:7px 13px;
+    font-size:.8rem; font-weight:700; color:var(--text-soft);
+  }
+  .badge-pill.earned{border-color:var(--accent); color:var(--accent);}
+
   .toast{
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(10px);
-    background:var(--text); color:#fff; font-size:.85rem; font-weight:700;
+    background:var(--bg-elevated-2); border:1px solid var(--border-strong); color:var(--text); font-size:.85rem; font-weight:700;
     padding:10px 18px; border-radius:var(--radius); z-index:300;
     opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;
   }
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
-  @media (max-width:380px){
-    .wordmark{font-size:1.1rem;}
+  @media (max-width:430px){
+    .wordmark{font-size:1.05rem; letter-spacing:.02em;}
     .app{padding:18px 12px 50px;}
+    .icon-btn{width:34px; height:34px; font-size:.95rem;}
+    .score-pill{font-size:.72rem; padding:7px 10px;}
   }
   @media (prefers-reduced-motion:reduce){
     *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
@@ -223,9 +316,14 @@
 
 <header class="topbar">
   <div class="topbar-inner">
-    <button class="icon-btn" id="btnHome" aria-label="Voltar ao sumário" title="Voltar ao sumário">←</button>
+    <div class="header-side left">
+      <button class="icon-btn" id="btnHome" aria-label="Voltar ao início" title="Voltar ao início">←</button>
+    </div>
     <h1 class="wordmark">MONTE A FRASE</h1>
-    <div class="score-pill" id="hudScore">0</div>
+    <div class="header-side right">
+      <button class="icon-btn" id="btnHelp" aria-label="Como jogar" title="Como jogar">?</button>
+      <div class="score-pill" id="hudScore">0</div>
+    </div>
   </div>
 </header>
 
@@ -233,21 +331,22 @@
 
   <!-- ================= HOME / SUMÁRIO ================= -->
   <section class="screen active" id="screen-home">
-    <p class="eyebrow">Desafio do dia</p>
+    <p class="eyebrow">Desafio de hoje</p>
     <div class="daily-card" id="dailyCard">
       <div class="daily-card-text">
         <span class="daily-card-title">Desafio do dia</span>
-        <span class="daily-card-sub" id="dailyCardSub">Monte o mini-texto a partir de uma pista.</span>
+        <span class="daily-card-sub" id="dailyCardSub">Um provérbio ou mini-poema novo a cada dia. Só uma tentativa por dia.</span>
       </div>
       <button class="btn-outline" id="btnDailyPlay">Jogar</button>
     </div>
 
-    <p class="eyebrow" style="margin-top:26px;">Escolha um capítulo</p>
+    <p class="eyebrow" style="margin-top:26px;">Escolha sua fase</p>
     <div class="toc" id="toc"></div>
     <button class="btn-primary" id="btnJogar" disabled>Começar</button>
     <p class="meta-line" id="homeStats"></p>
-    <div style="text-align:center; margin-top:14px;">
-      <button class="link-btn" id="btnReset">Apagar progresso salvo</button>
+    <div style="text-align:center; margin-top:14px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+      <button class="link-btn" id="btnShowStats">Ver minhas estatísticas</button>
+      <button class="link-btn" id="btnReset">Recomeçar do zero</button>
     </div>
   </section>
 
@@ -257,17 +356,17 @@
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
     <p class="streak-note" id="streakNote"></p>
     <div class="clue-box" id="clueBox" style="display:none;">
-      <strong>Pista</strong>
+      <strong id="clueLabel">Pista</strong>
       <span id="clueText"></span>
     </div>
 
     <div class="sentence-line" id="sentenceLine"></div>
 
-    <p class="bank-label">Arraste ou toque para posicionar — nem toda ficha é usada</p>
+    <p class="bank-label">Monte a frase arrastando (ou tocando) as fichas na ordem certa. Nem toda ficha é usada.</p>
     <div class="word-bank" id="wordBank"></div>
 
     <div class="controls">
-      <button class="btn-outline" id="btnHint">Dica (-20)</button>
+      <button class="btn-outline" id="btnHint">Dica</button>
       <button class="btn-primary" id="btnVerify">Verificar</button>
       <button class="link-btn" id="btnClear">Limpar</button>
     </div>
@@ -279,26 +378,25 @@
         <span class="verdict-points" id="verdictPoints"></span>
       </div>
       <p class="recap-frase" id="recapFrase"></p>
-      <div class="explain-box"><strong>Por quê</strong><span id="explicacaoTexto"></span></div>
+      <div class="explain-box"><strong>Explicação</strong><span id="explicacaoTexto"></span></div>
       <button class="btn-primary" id="btnContinue">Continuar</button>
     </div>
   </section>
 
   <!-- ================= BOLETIM / RESUMO ================= -->
   <section class="screen" id="screen-summary">
-    <p class="eyebrow" id="summaryTitle">Boletim do capítulo</p>
+    <p class="eyebrow" id="summaryTitle">Ficha de fim de fase</p>
     <div class="grade" id="summaryGrade">0%</div>
     <p class="grade-caption" id="summaryCaption">de aproveitamento</p>
     <div class="stat-grid">
       <div class="stat-box"><span class="stat-num" id="repAcertos">0</span><span class="stat-lbl">Acertos</span></div>
       <div class="stat-box"><span class="stat-num" id="repErros">0</span><span class="stat-lbl">Erros</span></div>
-      <div class="stat-box"><span class="stat-num" id="repDicas">0</span><span class="stat-lbl">Dicas</span></div>
       <div class="stat-box"><span class="stat-num" id="repPontos">0</span><span class="stat-lbl">Pontos</span></div>
     </div>
     <p class="teacher-remark" id="teacherRemark"></p>
     <div class="summary-actions">
-      <button class="btn-primary" id="btnRepeat">Refazer capítulo</button>
-      <button class="link-btn" id="btnBackHome">Voltar ao sumário</button>
+      <button class="btn-primary" id="btnRepeat">Refazer essa fase</button>
+      <button class="link-btn" id="btnBackHome">Voltar pro início</button>
     </div>
   </section>
 
@@ -309,17 +407,79 @@
     <p class="grade-caption">dia(s) seguidos</p>
     <div class="stat-grid">
       <div class="stat-box"><span class="stat-num" id="dailyTentativas">0</span><span class="stat-lbl">Tentativas</span></div>
-      <div class="stat-box"><span class="stat-num" id="dailyDicas">0</span><span class="stat-lbl">Dicas</span></div>
       <div class="stat-box"><span class="stat-num" id="dailyMelhor">0</span><span class="stat-lbl">Melhor seq.</span></div>
       <div class="stat-box"><span class="stat-num" id="dailyPontos">0</span><span class="stat-lbl">Pontos</span></div>
     </div>
     <p class="teacher-remark" id="dailyRecap"></p>
     <div class="summary-actions">
-      <button class="link-btn" id="btnDailyBackHome">Voltar ao início</button>
+      <button class="btn-outline" id="btnDailyShare">Copiar resultado</button>
+      <button class="link-btn" id="btnDailyBackHome">Voltar pro início</button>
+    </div>
+  </section>
+
+  <!-- ================= ESTATÍSTICAS ================= -->
+  <section class="screen" id="screen-stats">
+    <p class="eyebrow">Suas estatísticas</p>
+    <div class="title-badge-wrap"><span class="title-badge" id="statsTitle">Aprendiz de Português</span></div>
+    <div class="stat-grid" style="margin-top:16px;">
+      <div class="stat-box"><span class="stat-num" id="statsScore">0</span><span class="stat-lbl">Pontos</span></div>
+      <div class="stat-box"><span class="stat-num" id="statsDays">0</span><span class="stat-lbl">Dias jogados</span></div>
+      <div class="stat-box"><span class="stat-num" id="statsStreak">0</span><span class="stat-lbl">Sequência</span></div>
+    </div>
+
+    <p class="eyebrow" style="margin-top:24px;">Acertos nos últimos dias</p>
+    <div class="chart-box" id="statsChart"></div>
+
+    <p class="eyebrow" style="margin-top:24px;">Por fase</p>
+    <div class="chart-box" id="statsChapters"></div>
+
+    <p class="eyebrow" style="margin-top:24px;">Conquistas</p>
+    <div class="badges-row" id="statsBadges"></div>
+
+    <div style="text-align:center; margin-top:22px;">
+      <button class="link-btn" id="btnStatsBackHome">Voltar pro início</button>
     </div>
   </section>
 
 </main>
+
+<div class="egg-backdrop" id="eggBackdrop">
+  <img class="egg-image" id="eggImage" src="" alt="">
+</div>
+
+<div class="help-backdrop" id="helpBackdrop">
+  <div class="help-card">
+    <h2>Como jogar</h2>
+    <ul>
+      <li>Arraste as fichas para os espaços da frase, ou toque nelas para encaixar automaticamente.</li>
+      <li>Nem toda ficha é usada. Algumas são erros de crase, concordância ou regência.</li>
+      <li>No início de cada fase, leia a caixa de explicação: ela mostra a regra que a fase treina.</li>
+      <li>Se errar, observe as cores: verde é a palavra no lugar certo, vermelho está fora do lugar. Você pode tentar de novo antes de ver a resposta.</li>
+      <li>O botão Dica encaixa a palavra certa na primeira lacuna, mas custa 25 pontos.</li>
+      <li>Depois de acertar (ou de tentar algumas vezes), aparece uma explicação da regra usada na frase.</li>
+      <li>O Desafio do dia traz um provérbio ou mini-poema novo por dia, com uma única tentativa.</li>
+    </ul>
+    <h2>Preferências</h2>
+    <div class="settings-row">
+      <span>Som 8-bit</span>
+      <div class="music-controls">
+        <button class="btn-outline" id="btnVolDown" aria-label="Diminuir volume" title="Diminuir volume">−</button>
+        <button class="btn-outline" id="btnSoundToggle">Tocar</button>
+        <button class="btn-outline" id="btnVolUp" aria-label="Aumentar volume" title="Aumentar volume">+</button>
+        <span class="vol-label" id="volLabel">80%</span>
+      </div>
+    </div>
+    <div class="settings-row">
+      <span>Tamanho da letra</span>
+      <div class="font-size-group">
+        <button class="btn-outline" id="fontSmall">A-</button>
+        <button class="btn-outline" id="fontMedium">A</button>
+        <button class="btn-outline" id="fontLarge">A+</button>
+      </div>
+    </div>
+    <button class="btn-primary" id="btnHelpClose">Fechar</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -330,259 +490,264 @@
 /* =========================================================
    BANCO DE FRASES
    ========================================================= */
+const EGG_IMG = "data:image/png;base64,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";
 const CHAPTERS = [
-  {id:"facil",   nome:"Frases simples",        desc:"ordem direta", qtd:12},
-  {id:"medio",   nome:"Advérbios e regência",   desc:"ordem variável", qtd:10},
-  {id:"dificil", nome:"Orações subordinadas",   desc:"conectivos", qtd:8},
-  {id:"expert",  nome:"Crase e concordância",   desc:"nível vestibular", qtd:8},
+  {id:"facil",   nome:"Frases simples",        desc:"ordem direta",   qtd:12,
+   regra:"Na ordem direta, a frase segue esta sequência: quem faz a ação (sujeito) → o que faz (verbo) → com quê ou onde. Depois é só conferir a concordância: artigo, adjetivo e verbo precisam combinar em gênero e número com o substantivo."},
+  {id:"medio",   nome:"Advérbios e regência",   desc:"ordem mista",    qtd:10,
+   regra:"Aqui entram os advérbios (ontem, sempre, não...), que podem mudar de lugar sem alterar o sentido. E cada verbo pede uma preposição específica: 'gostar de', 'confiar em', 'precisar de'. Preposição errada deixa a frase incorreta."},
+  {id:"dificil", nome:"Orações subordinadas",   desc:"conectivos",     qtd:8,
+   regra:"Conectivos como 'embora', 'se', 'assim que', 'caso' e 'talvez' influenciam o verbo da oração seguinte: eles exigem o subjuntivo (estivesse, precise, chova) ou um tempo específico. Leia a frase inteira antes de montar."},
+  {id:"expert",  nome:"Crase e concordância",   desc:"nível avançado", qtd:8,
+   regra:"Regras cobradas em concursos e vestibulares: a crase surge quando um 'a' (preposição) encontra outro 'a' (artigo ou pronome demonstrativo) e os dois se fundem. E 'fazer' e 'haver' indicando tempo decorrido são impessoais: nunca vão para o plural."},
 ];
 
 const FRASES = {
   facil: [
     {id:"f1", blocos:["O","menino","comeu","a","maçã"], respostas:[[0,1,2,3,4]], distratores:["as"],
-     explicacao:"Concordância: 'a' concorda no singular com 'maçã' — 'as' seria plural."},
+     explicacao:"Concordância nominal: artigo e substantivo combinam em gênero e número. Como a frase fala de uma maçã só, o artigo fica no singular: 'a'. 'As' só funcionaria no plural ('as maçãs')."},
     {id:"f2", blocos:["A","menina","bebe","água"], respostas:[[0,1,2,3]], distratores:["bebem"],
-     explicacao:"O verbo concorda no singular com o sujeito 'a menina': bebe, não bebem."},
+     explicacao:"Concordância verbal: o verbo se ajusta ao sujeito. 'A menina' é uma pessoa (3ª pessoa do singular), então o verbo 'beber' fica em 'bebe'. 'Bebem' seria usado com um sujeito plural, como 'as meninas'."},
     {id:"f3", blocos:["O","cachorro","late","alto"], respostas:[[0,1,2,3]], distratores:["alta"],
-     explicacao:"'Alto' aqui é advérbio (modifica o verbo 'late') e não varia como o adjetivo 'alta'."},
+     explicacao:"Advérbio X adjetivo: 'alto' responde à pergunta 'como ele late', então modifica o verbo e funciona como advérbio, que não varia. O adjetivo é que concorda com o substantivo ('a voz alta')."},
     {id:"f4", blocos:["Eu","gosto","de","chocolate"], respostas:[[0,1,2,3]], distratores:["com"],
-     explicacao:"O verbo 'gostar' é transitivo indireto e pede a preposição 'de', não 'com'."},
+     explicacao:"Regência verbal: o verbo 'gostar' exige a preposição 'de' para apresentar o complemento. Não se diz 'gosto com chocolate'; o complemento desse verbo sempre vem introduzido por 'de'."},
     {id:"f5", blocos:["Nós","vamos","à","escola"], respostas:[[0,1,2,3]], distratores:["a"],
-     explicacao:"'Ir a' + 'a escola' se fundem em crase: vamos à escola (com acento)."},
+     explicacao:"Crase: 'ir a' pede a preposição 'a', e 'escola' pede o artigo 'a'. Quando a preposição e o artigo coincidem, eles se fundem numa só forma, marcada pelo acento grave: 'à'."},
     {id:"f6", blocos:["O","professor","explicou","a","lição"], respostas:[[0,1,2,3,4]], distratores:["as"],
-     explicacao:"'A lição' está no singular; o artigo precisa concordar: a, não as."},
+     explicacao:"Concordância nominal: 'lição' está no singular, então o artigo que a determina também fica no singular: 'a'. Artigo e substantivo sempre concordam entre si."},
     {id:"f7", blocos:["As","flores","são","bonitas"], respostas:[[0,1,2,3]], distratores:["bonita"],
-     explicacao:"O predicativo concorda em número com o sujeito plural: bonitas, não bonita."},
+     explicacao:"Concordância do predicativo: o adjetivo que vem depois do verbo 'ser' concorda em número com o sujeito. 'As flores' está no plural, logo o adjetivo também: 'bonitas'."},
     {id:"f8", blocos:["Maria","estuda","todos","os","dias"], respostas:[[0,1,2,3,4]], distratores:["toda"],
-     explicacao:"A expressão correta é 'todos os dias' — 'toda' não concorda com 'dias' (masculino)."},
+     explicacao:"Concordância em gênero: 'dias' é substantivo masculino, então o pronome indefinido combina com ele: 'todos os dias'. 'Toda' é a forma feminina ('toda a semana') e não combina com 'dias'."},
     {id:"f9", blocos:["O","bebê","dorme","no","berço"], respostas:[[0,1,2,3,4]], distratores:["na"],
-     explicacao:"'Berço' é substantivo masculino, por isso a contração correta é 'no' (em + o), não 'na'."},
+     explicacao:"Contração de preposição com artigo: 'dormir em' + 'o berço' resulta em 'no'. A contração segue o gênero do substantivo: 'berço' é masculino, por isso 'no'; 'na' seria usada com palavras femininas."},
     {id:"f10", blocos:["O","gato","preto","dorme","no","sofá"], respostas:[[0,1,2,3,4,5]], distratores:["pretos"],
-     explicacao:"O adjetivo concorda no singular com 'gato': preto, não pretos."},
+     explicacao:"Concordância nominal: o adjetivo 'preto' concorda com 'gato', que está no singular. Se houvesse mais de um gato, o adjetivo iria para o plural: 'pretos'."},
     {id:"f11", blocos:["Pedro","quer","um","sorvete"], respostas:[[0,1,2,3]], distratores:["uma"],
-     explicacao:"'Sorvete' é substantivo masculino, por isso o artigo correto é 'um', não 'uma'."},
+     explicacao:"Concordância em gênero: o artigo indefinido concorda com o gênero do substantivo. 'Sorvete' é masculino, então 'um sorvete'. 'Uma' seria usada com uma palavra feminina, como 'uma bola'."},
     {id:"f12", blocos:["Meu","pai","trabalha","na","fábrica"], respostas:[[0,1,2,3,4]], distratores:["no"],
-     explicacao:"'Fábrica' é substantivo feminino, por isso a contração correta é 'na' (em + a), não 'no'."},
+     explicacao:"Contração com palavra feminina: 'trabalhar em' + 'a fábrica' resulta em 'na'. A contração acompanha o gênero do substantivo: 'fábrica' é feminino, por isso 'na', e não 'no'."},
     {id:"f13", blocos:["A","menina","desenha","uma","casa"], respostas:[[0,1,2,3,4]], distratores:["um"],
-     explicacao:"'Casa' é substantivo feminino, por isso o artigo correto é 'uma', não 'um'."},
+     explicacao:"Concordância em gênero: 'casa' é substantivo feminino, e o artigo indefinido que o acompanha também precisa ser feminino: 'uma'."},
     {id:"f14", blocos:["Os","alunos","estudam","muito"], respostas:[[0,1,2,3]], distratores:["estuda"],
-     explicacao:"O verbo concorda no plural com o sujeito 'os alunos': estudam, não estuda."},
+     explicacao:"Concordância verbal: o verbo combina com o sujeito em número e pessoa. O sujeito 'os alunos' está no plural (3ª pessoa), então o verbo vai para o plural: 'estudam'."},
     {id:"f15", blocos:["Ela","mora","em","Recife"], respostas:[[0,1,2,3]], distratores:["no"],
-     explicacao:"Antes de nomes de cidade normalmente não se usa contração: mora em Recife, não no Recife."},
+     explicacao:"Nomes de cidade geralmente dispensam artigo, então não há contração possível. Diz-se 'mora em Recife', e não 'no Recife'. Algumas exceções consagradas existem, como 'no Rio' ou 'em São Paulo'."},
     {id:"f16", blocos:["O","sol","nasce","no","leste"], respostas:[[0,1,2,3,4]], distratores:["na"],
-     explicacao:"'Leste' é substantivo masculino, por isso a contração correta é 'no' (em + o), não 'na'."},
+     explicacao:"Contração com palavra masculina: 'nascer em' + 'o leste' resulta em 'no leste'. 'Leste' é masculino, por isso a forma 'no'; 'na' seria usada com um substantivo feminino."},
     {id:"f17", blocos:["Nós","comemos","pão","de","manhã"], respostas:[[0,1,2,3,4]], distratores:["da"],
-     explicacao:"A expressão correta é 'de manhã', sem contração com artigo."},
+     explicacao:"'De manhã' é uma expressão fixa que indica tempo, usada sem contrair o artigo. 'Da manhã' apareceria em outro contexto, como 'a brisa da manhã', em que o artigo determina o substantivo 'manhã'."},
     {id:"f18", blocos:["Ele","escreve","cartas","bonitas"], respostas:[[0,1,2,3]], distratores:["bonito"],
-     explicacao:"O adjetivo concorda em gênero e número com 'cartas' (fem. plural): bonitas, não bonito."},
+     explicacao:"Concordância em gênero e número: o adjetivo se ajusta ao substantivo nas duas categorias. 'Cartas' é feminino e plural, então o adjetivo também: 'bonitas'."},
     {id:"f19", blocos:["As","crianças","brincam","no","parque"], respostas:[[0,1,2,3,4]], distratores:["brinca"],
-     explicacao:"O verbo concorda no plural com 'as crianças': brincam, não brinca."},
+     explicacao:"Concordância verbal: sujeito plural pede verbo plural. 'As crianças' está na 3ª pessoa do plural, então o verbo é 'brincam'. 'Brinca' seria usado com 'a criança', no singular."},
     {id:"f20", blocos:["Eu","bebo","suco","de","laranja"], respostas:[[0,1,2,3,4]], distratores:["com"],
-     explicacao:"A expressão correta é 'suco de laranja', com a preposição 'de'."},
+     explicacao:"A preposição 'de' indica a natureza do suco: ele é feito de laranja. 'Com' indicaria um ingrediente adicional, como em 'suco com hortelã'. A preposição muda o sentido da frase."},
     {id:"f21", blocos:["O","menino","chuta","a","bola"], respostas:[[0,1,2,3,4]], distratores:["as"],
-     explicacao:"'A bola' está no singular; o artigo precisa concordar: a, não as."},
+     explicacao:"Concordância nominal: 'a bola' se refere a uma bola específica, no singular. O artigo acompanha o número do substantivo definido pelo contexto."},
     {id:"f22", blocos:["A","professora","corrige","as","provas"], respostas:[[0,1,2,3,4]], distratores:["duas"],
-     explicacao:"O artigo 'as' indica todas as provas; 'duas' mudaria o sentido para apenas duas delas."},
+     explicacao:"Artigo definido X numeral: 'as provas' se refere ao conjunto, sem quantificar. 'Duas provas' mudaria o sentido para um número exato. Artigo e numeral têm funções diferentes na frase."},
     {id:"f23", blocos:["Meus","amigos","moram","perto","daqui"], respostas:[[0,1,2,3,4]], distratores:["Meu"],
-     explicacao:"'Amigos' está no plural, por isso o possessivo correto é 'Meus', não 'Meu'."},
+     explicacao:"Concordância do possessivo: o pronome possessivo concorda em número com o substantivo. 'Amigos' está no plural, então 'meus'. 'Meu' seria usado apenas com 'meu amigo', no singular."},
     {id:"f24", blocos:["A","vovó","faz","bolo","de","chocolate"], respostas:[[0,1,2,3,4,5]], distratores:["com"],
-     explicacao:"A expressão correta é 'bolo de chocolate', com a preposição 'de'."},
+     explicacao:"A preposição 'de' indica a composição: o bolo é de chocolate. 'Com' indicaria um ingrediente extra, como em 'bolo com castanhas'. A preposição altera o que a frase informa."},
     {id:"f25", blocos:["O","time","venceu","o","jogo","ontem"], respostas:[[0,1,2,3,4,5]], distratores:["as"],
-     explicacao:"'O jogo' está no singular; o artigo precisa concordar: o, não as."},
+     explicacao:"Concordância nominal e de gênero: 'jogo' é substantivo masculino singular, então o artigo é 'o'. 'As' seria usado com um substantivo feminino no plural, como 'as partidas'."},
     {id:"f26", blocos:["Nós","moramos","numa","casa","grande"], respostas:[[0,1,2,3,4]], distratores:["num"],
-     explicacao:"'Casa' é substantivo feminino, por isso a contração correta é 'numa' (em+uma), não 'num'."},
+     explicacao:"Contração de 'em' com 'uma': como 'casa' é feminino, a contração é 'numa'. 'Num' (em + um) seria usada com um substantivo masculino, como 'num apartamento'."},
     {id:"f27", blocos:["A","cadeira","é","azul"], respostas:[[0,1,2,3]], distratores:["azuis"],
-     explicacao:"O adjetivo concorda no singular com o sujeito 'a cadeira': azul, não azuis."},
+     explicacao:"Concordância do predicativo: 'a cadeira' está no singular, então o adjetivo também fica no singular: 'azul'. O plural 'azuis' seria usado se houvesse mais de uma cadeira."},
     {id:"f28", blocos:["João","e","Maria","são","alegres"], respostas:[[0,1,2,3,4]], distratores:["alegre"],
-     explicacao:"O predicativo concorda no plural com o sujeito composto: alegres, não alegre."},
+     explicacao:"Sujeito composto pede predicativo no plural: quando o sujeito tem mais de um núcleo ('João e Maria'), o adjetivo concorda no plural: 'alegres'."},
     {id:"f29", blocos:["O","carro","novo","é","rápido"], respostas:[[0,1,2,3,4]], distratores:["rápidos"],
-     explicacao:"O adjetivo concorda no singular com 'carro': rápido, não rápidos."},
+     explicacao:"Concordância do predicativo: 'rápido' descreve 'o carro', que está no singular. 'Rápidos' seria necessário se houvesse mais de um carro."},
     {id:"f30", blocos:["Ela","comprou","vestidos","caros"], respostas:[[0,1,2,3]], distratores:["caro"],
-     explicacao:"O adjetivo concorda com 'vestidos' (plural): caros, não caro."},
+     explicacao:"Concordância nominal: 'vestidos' está no plural, então o adjetivo que o qualifica também vai para o plural: 'caros'."},
   ],
   medio: [
     {id:"m1", blocos:["Ontem","eu","fui","à","praia"], respostas:[[0,1,2,3,4],[1,2,3,4,0]], distratores:["a"],
-     explicacao:"'Ir a' + 'a praia' exige crase: à praia. O advérbio 'ontem' pode abrir ou fechar a frase."},
+     explicacao:"Crase: 'fui a' (o verbo 'ir' exige a preposição 'a' de destino) encontra 'a praia' (artigo). Os dois 'a' se fundem, e o acento grave marca essa fusão: 'à praia'. O advérbio 'ontem' pode vir no início ou no fim porque advérbios de tempo têm posição livre na frase."},
     {id:"m2", blocos:["O","menino","comeu","uma","maçã","vermelha"], respostas:[[0,1,2,3,4,5]], distratores:["vermelho"],
-     explicacao:"O adjetivo concorda no feminino com 'maçã': vermelha, não vermelho."},
+     explicacao:"Concordância em gênero: o adjetivo concorda com o substantivo que descreve. 'Maçã' é feminino, então 'vermelha'. 'Vermelho' seria usado com um substantivo masculino, como 'o tomate vermelho'."},
     {id:"m3", blocos:["Ela","não","quer","ir","à","escola","hoje"], respostas:[[0,1,2,3,4,5,6]], distratores:["a"],
-     explicacao:"'Ir à escola' tem crase (a + a). A negação 'não' sempre vem antes do verbo."},
+     explicacao:"Crase no destino: 'ir à escola' funde os dois 'a', como em toda expressão de destino com essa estrutura. O advérbio 'não' fica sempre antes do verbo que nega."},
     {id:"m4", blocos:["Precisamos","de","mais","tempo"], respostas:[[0,1,2,3]], distratores:["com"],
-     explicacao:"'Precisar', no sentido de necessitar, pede a preposição 'de', não 'com'."},
+     explicacao:"Regência verbal: o verbo 'precisar' (no sentido de necessitar) exige a preposição 'de'. 'Precisar com' não existe no português padrão."},
     {id:"m5", blocos:["Nós","não","gostamos","de","futebol"], respostas:[[0,1,2,3,4]], distratores:["com"],
-     explicacao:"'Gostar' pede a preposição 'de': gostamos de futebol."},
+     explicacao:"Regência do verbo 'gostar': ele exige a preposição 'de' para apresentar o complemento. Esse é um dos erros de regência mais comuns na fala."},
     {id:"m6", blocos:["O","professor","entregou","os","exames","aos","alunos"], respostas:[[0,1,2,3,4,5,6]], distratores:["ao"],
-     explicacao:"'Os exames' e 'os alunos' estão no plural, então a contração precisa concordar: aos, não ao."},
+     explicacao:"Contração e concordância: 'entregar a' + 'os alunos' resulta em 'aos', porque 'alunos' é masculino plural. A contração acompanha o gênero e o número do substantivo."},
     {id:"m7", blocos:["A","menina","está","estudando","para","a","prova"], respostas:[[0,1,2,3,4,5,6]], distratores:["pela"],
-     explicacao:"A locução correta é 'estudar para a prova' (finalidade), não 'pela'."},
+     explicacao:"'Estudar para a prova' indica a finalidade do estudo. 'Pela' (por + a) traria a ideia de causa ou substituição, o que mudaria o sentido da frase."},
     {id:"m8", blocos:["Apesar","da","chuva","eles","saíram","cedo"], respostas:[[0,1,2,3,4,5]], distratores:["na"],
-     explicacao:"'Apesar de' + 'a chuva' forma 'apesar da chuva' (de + a = da)."},
+     explicacao:"'Apesar de' exige a preposição 'de', que se funde com o artigo 'a' formando 'da'. 'Na' (em + a) não se encaixa nessa locução concessiva."},
     {id:"m9", blocos:["Quando","cheguei","em","casa","o","jantar","já","estava","pronto"], respostas:[[0,1,2,3,4,5,6,7,8]], distratores:["estavam"],
-     explicacao:"O verbo concorda no singular com 'o jantar': estava, não estavam."},
+     explicacao:"Concordância verbal: o sujeito de 'estar' é 'o jantar', no singular, então o verbo fica em 'estava'. Se o sujeito fosse plural, como 'os pratos', o verbo seria 'estavam'."},
     {id:"m10", blocos:["Meu","amigo","comprou","um","presente","para","sua","mãe"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["por"],
-     explicacao:"O verbo bitransitivo pede 'para' (destinatário do presente), não 'por'."},
+     explicacao:"A preposição 'para' indica o destinatário da ação, quem recebe o presente. 'Por' indicaria causa ou troca, o que mudaria o sentido da frase."},
     {id:"m11", blocos:["Depois","do","almoço","nós","fomos","ao","parque"], respostas:[[0,1,2,3,4,5,6],[3,4,5,6,0,1,2]], distratores:["no"],
-     explicacao:"'Ir ao parque' usa a + o = ao, não 'no' (em + o). A expressão de tempo pode abrir ou fechar a frase."},
+     explicacao:"Contração com valor de destino: 'ir a' + 'o parque' resulta em 'ao'. 'No' (em + o) indicaria permanência no lugar, não o destino do movimento. A locução de tempo pode vir no início ou no fim da frase."},
     {id:"m12", blocos:["Eu","sei","que","você","tem","razão"], respostas:[[0,1,2,3,4,5]], distratores:["tenho"],
-     explicacao:"O verbo da oração subordinada concorda com 'você': tem (3ª pessoa), não tenho."},
+     explicacao:"Concordância na oração subordinada: o verbo concorda com o sujeito daquela oração, que é 'você'. Por isso, 'tem', na 3ª pessoa do singular."},
     {id:"m13", blocos:["Todos","os","dias","eu","leio","um","pouco"], respostas:[[0,1,2,3,4,5,6]], distratores:["toda"],
-     explicacao:"A expressão correta é 'todos os dias' — 'toda' não concorda com 'dias' (masculino)."},
+     explicacao:"Concordância em gênero: 'dias' é masculino, então a expressão correta é 'todos os dias'. 'Toda' é a forma feminina, usada em expressões como 'toda semana'."},
     {id:"m14", blocos:["Ela","chegou","atrasada","à","reunião"], respostas:[[0,1,2,3,4]], distratores:["a"],
-     explicacao:"'Chegar a' + 'a reunião' exige crase: à reunião."},
+     explicacao:"Crase: 'chegar a' (preposição exigida pelo verbo) mais 'a reunião' (artigo). A fusão dos dois 'a' resulta em 'à'."},
     {id:"m15", blocos:["Nós","confiamos","em","você"], respostas:[[0,1,2,3]], distratores:["com"],
-     explicacao:"O verbo 'confiar' pede a preposição 'em', não 'com'."},
+     explicacao:"Regência do verbo 'confiar': na norma culta, confia-se 'em' alguém. 'Confiar com' não é usado na língua padrão."},
     {id:"m16", blocos:["Ele","insiste","em","sair","sozinho"], respostas:[[0,1,2,3,4]], distratores:["para"],
-     explicacao:"O verbo 'insistir' pede a preposição 'em', não 'para'."},
+     explicacao:"Regência: o verbo 'insistir' exige a preposição 'em'. 'Para' indicaria finalidade, o que não é o caso aqui."},
     {id:"m17", blocos:["Precisamos","chegar","antes","das","seis"], respostas:[[0,1,2,3,4]], distratores:["as"],
-     explicacao:"'De + as' se contrai em 'das': antes das seis, não antes as seis."},
+     explicacao:"Contração obrigatória: 'antes de' + 'as seis' resulta em 'das'. A preposição 'de' não fica separada de um artigo seguinte; os dois se fundem."},
     {id:"m18", blocos:["A","loja","fica","perto","da","praça"], respostas:[[0,1,2,3,4,5]], distratores:["de"],
-     explicacao:"'Perto de' + 'a praça' se contrai em 'da' (de + a): perto da praça."},
+     explicacao:"Contração de 'de' com artigo: 'perto de' + 'a praça' resulta em 'perto da praça'. O artigo definido é exigido pelo substantivo feminino 'praça'."},
     {id:"m19", blocos:["Assim","que","possível,","eu","te","aviso"], respostas:[[0,1,2,3,4,5]], distratores:["possíveis"],
-     explicacao:"'Possível' aqui não varia em número; 'possíveis' não se encaixa na expressão 'assim que possível'."},
+     explicacao:"'Assim que possível' é uma expressão fixa: 'possível' fica no singular porque a locução não se flexiona conforme o contexto."},
     {id:"m20", blocos:["Ainda","não","sei","se","vou","à","festa"], respostas:[[0,1,2,3,4,5,6]], distratores:["a"],
-     explicacao:"'Ir a' + 'a festa' exige crase: vou à festa."},
+     explicacao:"Crase: 'ir a' + 'a festa' resulta em 'à festa'. Um truque para identificar a crase é trocar o substantivo por um masculino: 'vou ao cinema' confirma que há preposição e artigo juntos."},
     {id:"m21", blocos:["Ele","sempre","chega","na","hora","certa"], respostas:[[0,1,2,3,4,5]], distratores:["a"],
-     explicacao:"'Chegar em' + 'a hora' se contrai em 'na' (em + a): chega na hora certa."},
+     explicacao:"Contração de 'em' com 'a': 'chega em' + 'a hora' resulta em 'na hora'. Sem essa contração, a regência do verbo ficaria incompleta."},
     {id:"m22", blocos:["Nunca","deixe","de","estudar"], respostas:[[0,1,2,3]], distratores:["para"],
-     explicacao:"A expressão correta é 'deixar de' fazer algo, não 'deixar para'."},
+     explicacao:"Locução verbal: 'deixar de' significa parar ou desistir de uma ação; o 'de' é parte fixa dessa locução. 'Deixar para' teria o sentido de adiar."},
     {id:"m23", blocos:["Ela","se","interessa","por","música","clássica"], respostas:[[0,1,2,3,4,5]], distratores:["de"],
-     explicacao:"O verbo 'interessar-se' pede a preposição 'por', não 'de'."},
+     explicacao:"Regência do verbo pronominal: 'interessar-se' exige a preposição 'por' na norma culta. Muitos verbos pronominais têm preposição fixa determinada pelo uso da língua."},
     {id:"m24", blocos:["O","ônibus","passa","de","hora","em","hora"], respostas:[[0,1,2,3,4,5,6]], distratores:["das"],
-     explicacao:"A expressão correta é 'de hora em hora', sem contração."},
+     explicacao:"'De X em X' é a estrutura fixa que marca intervalos regulares (de hora em hora, de dois em dois). Essa fórmula não contrai o artigo."},
     {id:"m25", blocos:["Ele","gosta","de","livros","antigos"], respostas:[[0,1,2,3,4]], distratores:["com"],
-     explicacao:"'Gostar de' exige a preposição 'de' para indicar o objeto do gosto."},
+     explicacao:"Regência do verbo 'gostar de': segue a mesma regra vista antes. 'Gostar com' não é uma construção válida em português."},
     {id:"m26", blocos:["Nós","viajamos","para","o","litoral","no","verão"], respostas:[[0,1,2,3,4,5,6]], distratores:["a"],
-     explicacao:"'Viajar para' indica destino; 'no verão' é a época correta (em+o)."},
+     explicacao:"'Viajar para' indica o destino ('para o litoral'), e 'no verão' (em + o) indica a época. Cada preposição cumpre uma função diferente na frase."},
   ],
   dificil: [
     {id:"d1", blocos:["Embora","estivesse","cansado","o","atleta","terminou","a","corrida"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["estava"],
-     explicacao:"'Embora' introduz oração concessiva e exige o subjuntivo: estivesse, não estava (indicativo)."},
+     explicacao:"Modo subjuntivo: 'embora' introduz uma ideia de concessão/contraste, e o subjuntivo é o modo usado para expressar essa relação. 'Estivesse', e não 'estava' (indicativo), porque o indicativo apresenta fatos, e aqui há uma ressalva."},
     {id:"d2", blocos:["Se","chover","amanhã","o","jogo","será","adiado"], respostas:[[0,1,2,3,4,5,6]], distratores:["chove"],
-     explicacao:"Depois de 'se' condicional referente ao futuro, usa-se o futuro do subjuntivo: chover, não chove."},
+     explicacao:"Condição no futuro: o 'se' apresenta uma hipótese sobre o futuro, e isso pede o futuro do subjuntivo: 'chover'. 'Chove' (presente do indicativo) apresentaria um fato, não uma possibilidade."},
     {id:"d3", blocos:["O","aluno","que","estudou","mais","passou","no","exame"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["estuda"],
-     explicacao:"A oração relativa descreve um fato passado: estudou, não estuda."},
+     explicacao:"A oração relativa ('que estudou mais') descreve um fato já concluído, então usa o pretérito. 'Estuda' (presente) criaria uma incoerência de tempo com o resto da frase."},
     {id:"d4", blocos:["Assim","que","ela","chegou","o","telefone","tocou"], respostas:[[0,1,2,3,4,5,6]], distratores:["chega"],
-     explicacao:"'Assim que' com valor de tempo passado pede pretérito: chegou, não chega."},
+     explicacao:"'Assim que' liga dois fatos que já aconteceram em sequência, por isso o pretérito: 'chegou...tocou'. 'Chega' (presente) quebraria essa sequência temporal."},
     {id:"d5", blocos:["Ninguém","sabia","por","que","ele","tinha","saído"], respostas:[[0,1,2,3,4,5,6]], distratores:["porque"],
-     explicacao:"Aqui 'por que' (separado) equivale a 'por qual motivo' — 'porque' junto seria resposta, não pergunta indireta."},
+     explicacao:"'Por que' separado e sem acento equivale a 'por qual motivo' e é usado em perguntas diretas ou indiretas. 'Porque' junto introduz uma resposta ou explicação, o que não é o caso aqui."},
     {id:"d6", blocos:["Caso","você","precise","de","ajuda","me","avise"], respostas:[[0,1,2,3,4,5,6]], distratores:["precisa"],
-     explicacao:"'Caso' pede o verbo no subjuntivo: precise, não precisa (indicativo)."},
+     explicacao:"'Caso' equivale a 'se' condicional e exige o subjuntivo: 'precise'. 'Precisa' (indicativo) trataria a ajuda como um fato certo, não como possibilidade."},
     {id:"d7", blocos:["A","professora","disse","que","a","prova","seria","adiada"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["vai"],
-     explicacao:"O verbo da oração subordinada segue o tempo do verbo principal (disse, passado): seria, não vai."},
+     explicacao:"Correlação de tempos verbais: como o verbo principal está no passado ('disse'), o que vem depois também recua no tempo: 'seria', o futuro do pretérito. 'Vai' misturaria dois tempos diferentes na mesma frase."},
     {id:"d8", blocos:["Como","estava","chovendo","cancelamos","o","passeio"], respostas:[[0,1,2,3,4,5]], distratores:["estive"],
-     explicacao:"O verbo concorda com o sujeito da chuva (3ª pessoa): estava, não estive (1ª pessoa)."},
+     explicacao:"'Chover' é um verbo de fenômeno da natureza e não tem sujeito. Verbos sem sujeito ficam sempre na 3ª pessoa do singular: 'estava'. 'Estive' é 1ª pessoa e não se aplica aqui."},
     {id:"d9", blocos:["Ele","correu","tanto","que","chegou","primeiro"], respostas:[[0,1,2,3,4,5]], distratores:["muito"],
-     explicacao:"A construção consecutiva é 'tanto...que' — 'muito' não forma essa estrutura corretamente aqui."},
+     explicacao:"'Tanto... que' é a estrutura consecutiva que liga uma intensidade a uma consequência: correu tanto (causa) que chegou (efeito). 'Muito' indicaria intensidade isolada, sem ligar a uma consequência."},
     {id:"d10", blocos:["Contanto","que","todos","concordem","faremos","a","viagem"], respostas:[[0,1,2,3,4,5,6]], distratores:["concordam"],
-     explicacao:"'Contanto que' exige o subjuntivo: concordem, não concordam (indicativo)."},
+     explicacao:"'Contanto que' introduz uma condição e exige o subjuntivo: 'concordem'. 'Concordam' (indicativo) trataria a condição como algo já certo."},
     {id:"d11", blocos:["Quando","terminar","o","trabalho,","eu","descanso"], respostas:[[0,1,2,3,4,5]], distratores:["termino"],
-     explicacao:"Depois de 'quando' com valor de futuro, usa-se o futuro do subjuntivo: terminar, não termino."},
+     explicacao:"Na oração temporal referente ao futuro, o verbo vai para o futuro do subjuntivo: 'terminar'. 'Termino' (presente) indicaria algo habitual, não uma previsão."},
     {id:"d12", blocos:["Ainda","que","chova,","iremos","à","praia"], respostas:[[0,1,2,3,4,5]], distratores:["chove"],
-     explicacao:"'Ainda que' introduz oração concessiva e exige o subjuntivo: chova, não chove."},
+     explicacao:"'Ainda que' introduz uma concessão e, como toda concessão, exige o subjuntivo: 'chova'. O subjuntivo é o modo usado para expressar contraste ou possibilidade."},
     {id:"d13", blocos:["Depois","que","ele","saiu,","tudo","mudou"], respostas:[[0,1,2,3,4,5]], distratores:["sai"],
-     explicacao:"A oração descreve um fato já concluído: saiu, no pretérito, não sai."},
+     explicacao:"Sequência temporal já encerrada: os dois verbos ficam no mesmo tempo, o pretérito, para indicar que os fatos já aconteceram. 'Sai' (presente) contradiria essa ideia de conclusão."},
     {id:"d14", blocos:["Por","mais","que","insista,","não","vou","ceder"], respostas:[[0,1,2,3,4,5,6]], distratores:["insisto"],
-     explicacao:"'Por mais que' introduz concessão e exige o subjuntivo: insista, não insisto."},
+     explicacao:"'Por mais que' intensifica a concessão e exige o subjuntivo: 'insista'. 'Insisto' (indicativo) apresentaria a insistência como um fato, não como hipótese."},
     {id:"d15", blocos:["Onde","quer","que","você","vá,","eu","vou","junto"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["vai"],
-     explicacao:"'Onde quer que' exige o subjuntivo: vá, não vai."},
+     explicacao:"'Onde quer que' é uma concessiva de lugar, que se refere a qualquer lugar possível, por isso usa o subjuntivo: 'vá'. 'Vai' fixaria um único lugar, o que não é o sentido pretendido."},
     {id:"d16", blocos:["Logo","que","a","aula","acabou,","saímos","correndo"], respostas:[[0,1,2,3,4,5,6]], distratores:["acaba"],
-     explicacao:"A oração descreve um fato já concluído: acabou, no pretérito, não acaba."},
+     explicacao:"'Logo que' marca imediatismo no passado. O pretérito 'acabou' mantém coerência com o restante da frase. 'Acaba' (presente) quebraria essa sequência."},
     {id:"d17", blocos:["Sempre","que","posso,","eu","leio","um","livro"], respostas:[[0,1,2,3,4,5,6]], distratores:["possa"],
-     explicacao:"Aqui a ideia é de hábito real, por isso usa-se o indicativo: posso, não possa."},
+     explicacao:"'Sempre que posso' descreve um hábito real, então usa o indicativo: 'posso'. O subjuntivo 'possa' seria usado para expressar possibilidade, não um costume."},
     {id:"d18", blocos:["Duvido","que","ele","chegue","a","tempo"], respostas:[[0,1,2,3,4,5]], distratores:["chega"],
-     explicacao:"O verbo 'duvidar' exige subjuntivo na oração seguinte: chegue, não chega."},
+     explicacao:"Verbos de dúvida pedem subjuntivo: 'duvidar' introduz incerteza, e o subjuntivo é o modo próprio dessa incerteza: 'chegue'. 'Chega' (indicativo) afirmaria o que a dúvida contesta."},
     {id:"d19", blocos:["Talvez","eu","viaje","no","próximo","mês"], respostas:[[0,1,2,3,4,5]], distratores:["viajo"],
-     explicacao:"Com 'talvez' expressando incerteza, o verbo costuma ir para o subjuntivo: viaje, não viajo."},
+     explicacao:"'Talvez' marca incerteza, e quando essa palavra introduz dúvida, o verbo vai para o subjuntivo: 'viaje'. 'Viajo' (indicativo) soaria como algo praticamente certo."},
     {id:"d20", blocos:["À","medida","que","o","tempo","passava,","ele","melhorava"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["a"],
-     explicacao:"A expressão 'à medida que' exige crase, por ser locução conjuntiva consagrada pelo uso."},
+     explicacao:"'À medida que' é uma locução fixa de proporção que já é usada com acento grave por convenção da língua. Não é uma questão de escolha: a locução sempre leva crase."},
     {id:"d21", blocos:["Mal","ele","chegou,","a","festa","começou"], respostas:[[0,1,2,3,4,5]], distratores:["quando"],
-     explicacao:"'Mal' (assim que) pede o pretérito perfeito, enquanto 'quando' seria mais genérico."},
+     explicacao:"'Mal' equivale a 'assim que' e indica imediatismo, exigindo o pretérito perfeito. 'Quando' apenas situaria o momento, sem essa ideia de sequência imediata."},
   ],
   expert: [
     {id:"e1", blocos:["Refiro-me","àquela","situação","que","mencionamos","ontem"], respostas:[[0,1,2,3,4,5]], distratores:["aquela","essa"],
-     explicacao:"Crase antes de pronome demonstrativo feminino: a + aquela = àquela."},
+     explicacao:"Crase com pronome demonstrativo: o verbo 'referir-se' exige a preposição 'a', e 'aquela' já contém o 'a' do pronome. Os dois se fundem numa única forma, marcada com acento: 'àquela'."},
     {id:"e2", blocos:["Obedecemos","às","regras","estabelecidas","pela","escola"], respostas:[[0,1,2,3,4,5]], distratores:["as","pelo"],
-     explicacao:"'Obedecer' pede a preposição 'a'; diante de 'as regras' (fem. plural) ocorre crase: às."},
+     explicacao:"Regência e crase juntas: 'obedecer' exige 'a'; 'as regras' já traz o artigo 'as'. Os dois se fundem em 'às'. E 'pela' (por + a) concorda com 'escola', substantivo feminino singular."},
     {id:"e3", blocos:["Aspiro","a","um","cargo","de","destaque","na","empresa"], respostas:[[0,1,2,3,4,5,6,7]], distratores:["à","numa"],
-     explicacao:"'Aspirar a' (desejar) não tem crase aqui: 'um cargo' é substantivo masculino, sem 'a' feminino para se fundir."},
+     explicacao:"Crase vetada por artigo indefinido masculino: 'aspirar' (no sentido de desejar) exige 'a', mas o alvo é 'um cargo', que não tem artigo feminino para se fundir. Sem artigo 'a', não há crase."},
     {id:"e4", blocos:["Faz","dois","anos","que","não","o","vejo"], respostas:[[0,1,2,3,4,5,6]], distratores:["Fazem","lhe"],
-     explicacao:"'Fazer' indicando tempo decorrido é impessoal e fica sempre no singular: Faz, nunca Fazem."},
+     explicacao:"Verbo impessoal: o 'fazer' indicando tempo decorrido não tem sujeito, por isso fica sempre na 3ª pessoa do singular: 'faz', mesmo diante de 'dois anos'."},
     {id:"e5", blocos:["Havia","muitas","pessoas","na","festa","ontem"], respostas:[[0,1,2,3,4,5]], distratores:["Haviam","pela"],
-     explicacao:"'Haver' no sentido de existir é impessoal e nunca vai para o plural: Havia, nunca Haviam."},
+     explicacao:"'Haver' no sentido de existir é impessoal e não tem sujeito, por isso não varia em número: 'havia', mesmo diante de 'muitas pessoas'. 'Haviam' é um erro comum, mas não é aceito na norma culta nesse sentido."},
     {id:"e6", blocos:["Ele","é","um","dos","que","mais","se","dedicam","ao","trabalho"], respostas:[[0,1,2,3,4,5,6,7,8,9]], distratores:["dedica","pelo"],
-     explicacao:"Na construção 'um dos que', o verbo da oração seguinte concorda no plural: dedicam, não dedica."},
+     explicacao:"Concordância com antecedente plural: em 'um dos que', o pronome 'que' retoma o grupo todo, então o verbo concorda no plural: 'dedicam'. 'Ao' é a contração de 'a' + 'o', exigida pela regência de 'dedicar-se'."},
     {id:"e7", blocos:["A","maioria","dos","alunos","chegou","atrasada"], respostas:[[0,1,2,3,4,5]], distratores:["chegaram","atrasado"],
-     explicacao:"Com 'a maioria de' + plural, o verbo pode ficar no singular: chegou. 'Atrasada' concorda com 'a maioria' (fem.)."},
+     explicacao:"Concordância com o núcleo singular: o sujeito gramatical é 'a maioria', substantivo singular feminino, mesmo se referindo a vários alunos. O verbo pode ficar no singular ('chegou'), e o predicativo acompanha o núcleo ('atrasada')."},
     {id:"e8", blocos:["Assistimos","ao","filme","recomendado","pela","crítica"], respostas:[[0,1,2,3,4,5]], distratores:["o","da"],
-     explicacao:"'Assistir' no sentido de ver pede a preposição 'a': assistimos ao filme (a + o = ao), não 'o filme'."},
+     explicacao:"Regência do verbo 'assistir': no sentido de 'ver', exige a preposição 'a', que se contrai com o artigo: 'ao filme'. E 'pela' (por + a) indica o agente da voz passiva."},
     {id:"e9", blocos:["Chegamos","à","conclusão","de","que","o","projeto","era","viável"], respostas:[[0,1,2,3,4,5,6,7,8]], distratores:["a","foi"],
-     explicacao:"'Chegar a' + 'a conclusão' funde-se em crase: chegamos à conclusão."},
+     explicacao:"Crase na locução: 'chegar a' + 'a conclusão' resulta em 'à'. E o verbo da oração seguinte fica no pretérito imperfeito ('era') porque descreve um estado no passado, não um evento pontual."},
     {id:"e10", blocos:["Fazia","anos","que","ele","não","visitava","a","cidade","natal"], respostas:[[0,1,2,3,4,5,6,7,8]], distratores:["Faziam","essa"],
-     explicacao:"'Fazer' indicando tempo também é impessoal no passado: Fazia, nunca Faziam."},
+     explicacao:"Mesma regra do verbo impessoal: 'fazer' indicando tempo decorrido nunca tem sujeito, por isso fica sempre no singular, independentemente do tempo verbal: 'fazia'."},
     {id:"e11", blocos:["Prefiro","chá","a","café"], respostas:[[0,1,2,3]], distratores:["que","do"],
-     explicacao:"'Preferir' pede a estrutura 'preferir X a Y' — não se usa 'que' nem 'do que' com esse verbo."},
+     explicacao:"Regência do verbo 'preferir': a norma culta usa a estrutura 'preferir X a Y'. Formas como 'preferir X do que Y' são evitadas na escrita formal, porque o verbo 'preferir' já contém a ideia de comparação."},
     {id:"e12", blocos:["Ele","reside","na","capital","paulista"], respostas:[[0,1,2,3,4]], distratores:["em","à"],
-     explicacao:"'Capital' é substantivo feminino; a contração correta é 'na' (em + a), não apenas 'em'."},
+     explicacao:"Contração simples, sem crase: 'residir em' + 'a capital' resulta em 'na capital'. O acento grave só se aplica à preposição 'a' com artigo 'a', não à preposição 'em'."},
     {id:"e13", blocos:["Nunca","vi","ninguém","tão","dedicado","quanto","ela"], respostas:[[0,1,2,3,4,5,6]], distratores:["como","que"],
-     explicacao:"A correlação correta é 'tão... quanto', não 'tão... como' ou 'tão... que'."},
+     explicacao:"Correlação comparativa de igualdade: com adjetivo, usa-se 'tão... quanto' ('tão dedicado quanto ela'). 'Tão... como' também é aceito, mas 'quanto' é mais cobrado em provas."},
     {id:"e14", blocos:["Todos","nós","precisamos","uns","dos","outros"], respostas:[[0,1,2,3,4,5]], distratores:["um","outro"],
-     explicacao:"A expressão recíproca correta é 'uns dos outros', sempre no plural."},
+     explicacao:"Reciprocidade no plural: 'um do outro' se referiria a apenas duas pessoas; aqui a ideia é de que todos precisam de todos, por isso a forma é 'uns dos outros'."},
     {id:"e15", blocos:["É","proibido","fumar","neste","recinto"], respostas:[[0,1,2,3,4]], distratores:["no","essa"],
-     explicacao:"'Neste' (em + este) retoma um lugar específico já indicado; é a forma mais adequada aqui."},
+     explicacao:"'Neste' (em + este) é o demonstrativo de 1ª pessoa, usado para o lugar onde o falante está. 'No' é apenas artigo, sem essa referência; 'essa' seria de 2ª pessoa."},
     {id:"e16", blocos:["Nós","lhe","demos","o","recado","ontem"], respostas:[[0,1,2,3,4,5]], distratores:["deram","lo"],
-     explicacao:"'Demos' concorda com 'nós' (1ª pessoa do plural); 'deram' seria 3ª pessoa, incorreta aqui."},
+     explicacao:"Concordância pessoal: o sujeito da oração é 'nós', então o verbo fica na 1ª pessoa do plural: 'demos'. 'Deram' seria usado apenas com o sujeito 'eles'."},
     {id:"e17", blocos:["Faltam","três","dias","para","o","exame"], respostas:[[0,1,2,3,4,5]], distratores:["Falta","pelo"],
-     explicacao:"O sujeito 'três dias' é plural, por isso o verbo concorda no plural: Faltam, não Falta."},
+     explicacao:"Concordância com sujeito posposto: aqui o sujeito ('três dias') vem depois do verbo. Como está no plural, o verbo também fica no plural: 'faltam'."},
     {id:"e18", blocos:["Ela","é","alérgica","à","poeira"], respostas:[[0,1,2,3,4]], distratores:["a","de"],
-     explicacao:"'Ser alérgico a' + 'a poeira' funde-se em crase: alérgica à poeira."},
+     explicacao:"Crase com adjetivo: 'ser alérgico a' é a regência do adjetivo, e 'a poeira' traz o artigo 'a'. A soma dos dois resulta em 'à poeira'."},
     {id:"e19", blocos:["Isso","não","diz","respeito","a","você"], respostas:[[0,1,2,3,4,5]], distratores:["à","com"],
-     explicacao:"Antes de pronomes pessoais como 'você', não se usa crase: a você, não à você."},
+     explicacao:"Crase vetada com pronome pessoal: 'você' não aceita artigo definido, então não há um segundo 'a' para formar a crase. A crase depende sempre da presença de um artigo."},
     {id:"e20", blocos:["Fomos","nós","que","resolvemos","o","problema"], respostas:[[0,1,2,3,4,5]], distratores:["Fui","resolveu"],
-     explicacao:"O verbo concorda com 'nós': Fomos... resolvemos, não Fui... resolveu."},
-    {id:"e21", blocos:["Tais","medidas","foram","tomadas","pela","direção"], respostas:[[0,1,2,3,4,5]], distratores:["Tais","pelas"],
-     explicacao:"'Tais' concorda em gênero com 'medidas'; 'pela' (preposição + a) é a forma correta."},
+     explicacao:"Concordância com 'que' retomando um pronome: em 'fomos nós que', o 'que' se refere a 'nós', então o verbo da oração seguinte também fica na 1ª pessoa do plural: 'resolvemos'."},
+    {id:"e21", blocos:["Tais","medidas","foram","tomadas","pela","direção"], respostas:[[0,1,2,3,4,5]], distratores:["Tal","pelas"],
+     explicacao:"Concordância do indefinido plural: 'tais' concorda em número com 'medidas'; é a forma plural de 'tal'. 'Pela direção' (por + a) indica o agente da voz passiva, no singular."},
   ],
 };
 const DAILY_TEXTS = [
-  {id:"dp1", tipo:"Provérbio popular", linhas:[["Devagar","se","vai","ao","longe."]],
-   dica:"Ensina que ter paciência e ir com calma leva a bons resultados.",
-   explicacao:"Provérbio popular: pressa nem sempre é sinônimo de eficiência."},
+{id:"dp1", tipo:"Provérbio popular", linhas:[["Devagar","se","vai","ao","longe."]],
+   dica:"Quem tem calma e persistência chega mais longe do que quem tem pressa.",
+   explicacao:"O 'se' antes de 'vai' é o pronome indeterminador: ele apaga o sujeito e generaliza ('a gente vai', 'alguém vai'). E 'ao longe' é a contração de 'a' + 'o': destino com artigo definido."},
   {id:"dp2", tipo:"Provérbio popular", linhas:[["Água","mole","em","pedra","dura,"],["tanto","bate","até","que","fura."]],
-   dica:"Fala sobre insistência: repetir uma ação pequena, aos poucos, pode vencer algo bem resistente.",
-   explicacao:"Provérbio popular: a persistência supera obstáculos difíceis."},
+   dica:"A repetição de um pequeno esforço, com o tempo, vence até o que parece impossível.",
+   explicacao:"Os adjetivos vêm depois dos substantivos ('água mole', 'pedra dura'), ordem típica quando o adjetivo indica uma propriedade literal. E 'tanto... até que' é a correlação consecutiva: a intensidade (tanto bate) resulta em uma consequência (até que fura)."},
   {id:"dp3", tipo:"Provérbio popular", linhas:[["Quem","canta","seus","males","espanta."]],
-   dica:"Diz que alegria e música ajudam a esquecer os problemas.",
-   explicacao:"Provérbio popular sobre o poder da alegria diante das dificuldades."},
+   dica:"Cantar ajuda a aliviar tristezas e preocupações.",
+   explicacao:"'Quem' substitui 'a pessoa que': é o pronome relativo que cria um sujeito genérico sem precisar nomear ninguém. E 'seus males' mostra o possessivo concordando em gênero e número com 'males'."},
   {id:"dp4", tipo:"Provérbio popular", linhas:[["De","grão","em","grão,"],["a","galinha","enche","o","papo."]],
-   dica:"Mostra que pequenas partes, somadas aos poucos, formam um todo grande.",
-   explicacao:"Provérbio popular sobre a importância de pequenos esforços constantes."},
+   dica:"Pequenas contribuições, somadas ao longo do tempo, formam um resultado maior.",
+   explicacao:"'De... em...' é a estrutura fixa de repetição de intervalos (de grão em grão, de dia em dia), que não contrai artigo. E 'a galinha' leva artigo definido com valor generalizador: não se refere a uma galinha específica, mas a qualquer galinha."},
   {id:"dp5", tipo:"Provérbio popular", linhas:[["Antes","tarde","do","que","nunca."]],
-   dica:"Diz que é melhor fazer algo com atraso do que nunca fazer.",
-   explicacao:"Provérbio popular sobre a importância de agir, mesmo tarde."},
+   dica:"É melhor fazer algo com atraso do que não fazer.",
+   explicacao:"Comparação com elipse: a frase completa seria 'antes (é) tarde do que nunca'. 'Do que' é a locução comparativa usada em comparações (maior do que, antes do que)."},
   {id:"dp6", tipo:"Provérbio popular", linhas:[["Filho","de","peixe,"],["peixinho","é."]],
-   dica:"Fala sobre semelhanças entre pais e filhos.",
-   explicacao:"Provérbio popular sobre heranças de comportamento entre gerações."},
+   dica:"Os filhos costumam herdar características ou hábitos dos pais.",
+   explicacao:"Ordem invertida por topicalização: 'filho de peixe' é colocado em destaque no início, e o verbo 'é' fecha a frase (a ordem direta seria 'filho de peixe é peixinho'). O diminutivo '-inho' dá um tom afetivo à frase."},
   {id:"dp7", tipo:"Provérbio popular", linhas:[["Cão","que","ladra","não","morde."]],
-   dica:"É sobre quem ameaça muito, mas raramente faz algo de fato.",
-   explicacao:"Provérbio popular sobre ameaças vazias."},
+   dica:"Quem apenas ameaça raramente parte para a ação.",
+   explicacao:"'Que ladra' é oração relativa restritiva: seleciona o cão que ladra, entre outros, por isso não leva vírgula. O pronome relativo 'que' liga o substantivo 'cão' ao verbo 'ladra' sem repetir a palavra 'cão'."},
   {id:"dp8", tipo:"Provérbio popular", linhas:[["Mais","vale","um","pássaro","na","mão"],["do","que","dois","voando."]],
-   dica:"Ensina que é melhor ter algo certo do que arriscar por algo maior e incerto.",
-   explicacao:"Provérbio popular sobre valorizar o que já se tem."},
+   dica:"O que já se tem garantido vale mais do que uma promessa incerta.",
+   explicacao:"São duas estruturas de comparação: 'mais vale... do que...' no verbo, e 'na mão' (em + a) contraindo com o substantivo feminino. O gerúndio 'voando' reduz a oração 'que estão voando'."},
   {id:"po1", tipo:"Mini-poema", linhas:[["A","chuva","cai","bem","devagar,"],["o","sol","depois","vai","despontar."]],
-   dica:"Fala sobre um dia de chuva que termina com sol.",
-   explicacao:"Mini-poema original sobre a passagem da chuva para o sol."},
+   dica:"Um dia nublado que, no fim, abre para o sol.",
+   explicacao:"O advérbio 'bem' intensifica outro advérbio ('bem devagar'). E o futuro com 'ir' ('vai despontar') é o futuro perifrástico, mais usado na fala do que a forma sintética 'despontará'. A rima (devagar/despontar) organiza o ritmo do poema."},
   {id:"po2", tipo:"Mini-poema", linhas:[["No","jardim","nasce","uma","flor,"],["pequena,","cheia","de","cor."]],
-   dica:"Descreve uma florzinha nova nascendo em um jardim.",
-   explicacao:"Mini-poema original sobre o nascimento de uma flor."},
+   dica:"Uma flor pequena e colorida surgindo no jardim.",
+   explicacao:"O sujeito vem depois do verbo ('nasce uma flor'): inversão por ênfase e rima, já que a ordem direta seria 'uma flor nasce'. 'Cheia de' é a regência do adjetivo: estar cheio de algo. O predicativo concorda com 'flor', feminino singular."},
   {id:"po3", tipo:"Mini-poema", linhas:[["O","livro","aberto","na","mesa"],["guarda","um","mundo","de","beleza."]],
-   dica:"Fala sobre o valor de um livro aberto à espera de ser lido.",
-   explicacao:"Mini-poema original sobre o encanto da leitura."},
-  {id:"po4", tipo:"Mini-poema", linhas:[["O","tempo","passa","ligeiro,"],["não","espera","o","dia","inteiro."]],
-   dica:"É sobre como o tempo passa rápido e não espera por ninguém.",
-   explicacao:"Mini-poema original sobre a passagem do tempo."},
+   dica:"Um livro aberto guarda um mundo inteiro para ser descoberto.",
+   explicacao:"'Aberto' é particípio com valor de adjetivo: descreve um estado, e não uma ação (equivale a 'que está aberto'). 'Na mesa' (em + a) contrai o lugar. 'Um mundo de beleza' usa o 'de' de qualidade."},
+  {id:"po4", tipo:"Mini-poema", linhas:[["O","tempo","passa","ligeiro,","não","espera","o","dia","inteiro."]],
+   dica:"O tempo não espera por ninguém; vale aproveitá-lo.",
+   explicacao:"'Ligeiro' funciona aqui como advérbio, sem o sufixo '-mente' (equivalente a 'ligeiramente'), uma formação comum na poesia por causa da rima e do ritmo. Na prosa, seria mais comum usar 'ligeiramente'."},
   {id:"po5", tipo:"Mini-poema", linhas:[["A","lua","brilha","no","céu","escuro,"],["guiando","quem","busca","um","caminho","seguro."]],
-   dica:"Fala sobre a lua iluminando a noite para quem precisa de orientação.",
-   explicacao:"Mini-poema original sobre a lua como guia na escuridão."},
+   dica:"A lua ilumina a noite de quem está procurando o caminho certo.",
+   explicacao:"O gerúndio 'guiando' reduz a oração 'que guia', tornando a frase mais enxuta. 'Quem busca' é o mesmo relativo universal dos provérbios: qualquer pessoa que busca. 'No céu escuro' contrai 'em' + 'o' e o adjetivo concorda com o substantivo."},
 ];
 /* =========================================================
    ESTADO / PERSISTÊNCIA
@@ -594,7 +759,7 @@ function defaultState(){
   const stats={};
   ORDER.forEach(id=>stats[id]={acertos:0,erros:0,dicas:0,melhor:0});
   stats.daily={acertos:0,erros:0,dicas:0,melhor:0};
-  return {unlocked:ORDER.length-1, score:0, solved:{}, stats,
+  return {unlocked:ORDER.length-1, score:0, solved:{}, stats, fontSizeKey:"medium", soundOn:true, musicVolume:0.8, history:[],
     daily:{lastSolvedDate:null, streak:0, melhorStreak:0, tentativasHoje:0, dicasHoje:0, pontosHoje:0}
   };
 }
@@ -608,6 +773,10 @@ function loadState(){
         if(!d.stats.daily) d.stats.daily={acertos:0,erros:0,dicas:0,melhor:0};
         if(typeof d.score!=="number") d.score=0;
         if(!d.daily) d.daily={lastSolvedDate:null, streak:0, melhorStreak:0, tentativasHoje:0, dicasHoje:0, pontosHoje:0};
+        if(!d.fontSizeKey) d.fontSizeKey="medium";
+        if(typeof d.soundOn!=="boolean") d.soundOn=true;
+        if(typeof d.musicVolume!=="number") d.musicVolume=0.8;
+        if(!Array.isArray(d.history)) d.history=[];
         d.unlocked = ORDER.length-1; // todos os capítulos sempre liberados
         return d;
       }
@@ -620,7 +789,7 @@ function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(stat
 let state = loadState();
 
 /* =========================================================
-   DESAFIO DO DIA — sorteio determinístico pela data
+   DESAFIO DO DIA: sorteio determinístico pela data
    ========================================================= */
 function todayDateStr(d){
   d = d || new Date();
@@ -670,7 +839,7 @@ function toast(msg){
   toastTimer=setTimeout(()=>t.classList.remove("show"),2000);
 }
 function showScreen(name){
-  ["home","game","summary","daily-result"].forEach(s=>{
+  ["home","game","summary","daily-result","stats"].forEach(s=>{
     $("screen-"+s).classList.toggle("active", s===name);
   });
 }
@@ -709,6 +878,7 @@ function renderHome(){
         document.querySelectorAll(".toc-row").forEach(r=>r.classList.remove("selected"));
         row.classList.add("selected");
         $("btnJogar").disabled=false;
+        trackEggSequence(ch.id);
       });
       if(!firstUnlockedFound && idx===state.unlocked){
         firstUnlockedFound=true;
@@ -732,7 +902,7 @@ $("btnJogar").addEventListener("click", ()=> startChapter(selectedChapter));
 $("btnHome").addEventListener("click", ()=>{ renderHome(); showScreen("home"); });
 $("btnBackHome").addEventListener("click", ()=>{ renderHome(); showScreen("home"); });
 $("btnReset").addEventListener("click", ()=>{
-  if(confirm("Apagar todo o progresso salvo?")){
+  if(confirm("Apagar todo o progresso e recomeçar do zero?")){
     state=defaultState();
     saveState();
     renderHome();
@@ -761,6 +931,7 @@ function startChapter(id){
     acertos:0, erros:0, dicas:0,
     streak:0,
     pontosGanhos:0,
+    errosNaFrase:0,
   };
   showScreen("game");
   loadPhrase();
@@ -771,7 +942,6 @@ function startChapter(id){
    ========================================================= */
 let slots=[];     // array length N: bloco-index ou null
 let bank=[];      // array de bloco-index ainda não posicionados
-let hintUsed=false;
 
 function currentFrase(){ return game.phrases[game.current]; }
 
@@ -787,7 +957,6 @@ function fullBank(frase){
 
 function loadPhrase(){
   const frase = currentFrase();
-  hintUsed=false;
   $("correction").classList.remove("show");
   slots = frase.blocos.map(()=>null);
   bank = shuffle(fullBank(frase));
@@ -803,16 +972,23 @@ function updateHeader(){
     $("streakNote").textContent = state.daily.streak>0 ? `sequência atual: ${state.daily.streak} dia(s)` : "";
     if(frase.dica){
       $("clueBox").style.display="block";
+      $("clueLabel").textContent = "Pista";
       $("clueText").textContent = frase.dica;
     }else{
       $("clueBox").style.display="none";
     }
   }else{
     const ch = CHAPTERS.find(c=>c.id===game.chapterId);
-    $("chapterTag").innerHTML = `Capítulo ${CHAPTERS.findIndex(c=>c.id===game.chapterId)+1} · ${ch.nome} — <b>frase ${game.current+1} de ${game.phrases.length}</b>`;
+    $("chapterTag").innerHTML = `Capítulo ${CHAPTERS.findIndex(c=>c.id===game.chapterId)+1} · ${ch.nome}: <b>frase ${game.current+1} de ${game.phrases.length}</b>`;
     $("progressFill").style.width = (game.current/game.phrases.length*100)+"%";
-    $("streakNote").textContent = game.streak>=2 ? `sequência de ${game.streak} acertos!` : "";
-    $("clueBox").style.display="none";
+    $("streakNote").textContent = game.streak>=2 ? `sequência de ${game.streak} acertos` : "";
+    if(game.current===0 && ch.regra){
+      $("clueLabel").textContent = "O que essa fase ensina";
+      $("clueText").textContent = ch.regra;
+      $("clueBox").style.display="block";
+    }else{
+      $("clueBox").style.display="none";
+    }
   }
   updateScoreHud();
 }
@@ -859,8 +1035,6 @@ function render(){
     const tile=makeTile(tileText(frase,val), val);
     bankEl.appendChild(tile);
   });
-
-  $("btnHint").disabled = hintUsed;
 }
 
 function makeTile(text, value){
@@ -880,9 +1054,10 @@ function makeTile(text, value){
    ========================================================= */
 function tapBank(blocoIdx){
   const idx = slots.indexOf(null);
-  if(idx===-1){ toast("Todos os espaços já estão preenchidos."); return; }
+  if(idx===-1){ toast("Os espaços já estão preenchidos: remova uma ficha antes de trocar."); return; }
   slots[idx]=blocoIdx;
   bank = bank.filter(b=>b!==blocoIdx);
+  sfxClick();
   render();
 }
 function tapSlot(slotIdx){
@@ -890,6 +1065,7 @@ function tapSlot(slotIdx){
   if(val===null) return;
   slots[slotIdx]=null;
   bank.push(val);
+  sfxClick();
   render();
 }
 
@@ -1009,52 +1185,45 @@ function onTileUp(e){
 }
 
 /* =========================================================
-   DICA
-   ========================================================= */
-$("btnHint").addEventListener("click", ()=>{
-  if(hintUsed){ toast("Você já usou a dica nesta frase."); return; }
-  const frase=currentFrase();
-  const correct=frase.respostas[0];
-  const idx = slots.findIndex((v,i)=> v!==correct[i]);
-  if(idx===-1){ toast("Sua frase já está certa — toque em Verificar!"); return; }
-  const needed = correct[idx];
-  const posInSlots = slots.indexOf(needed);
-
-  if(posInSlots!==-1 && posInSlots!==idx){
-    const cell=document.querySelector(`.slot-cell[data-index="${posInSlots}"] .tile`);
-    if(cell) pulse(cell);
-    toast("A ficha destacada precisa ir para outra posição.");
-  }else{
-    const tile=[...document.querySelectorAll("#wordBank .tile")].find(t=>parseInt(t.dataset.bloco,10)===needed);
-    if(tile) pulse(tile);
-    toast("Arraste a ficha destacada até o espaço destacado.");
-  }
-  const destCell=document.querySelector(`.slot-cell[data-index="${idx}"]`);
-  if(destCell) pulse(destCell);
-
-  hintUsed=true;
-  game.dicas++;
-  state.score=Math.max(0, state.score-20);
-  state.stats[game.chapterId].dicas++;
-  saveState();
-  $("btnHint").disabled=true;
-  updateScoreHud();
-});
-function pulse(el){
-  el.classList.add("pulse");
-  setTimeout(()=>el.classList.remove("pulse"), 2000);
-}
-
-/* =========================================================
    VERIFICAR
    ========================================================= */
 $("btnVerify").addEventListener("click", ()=>{
-  if(slots.includes(null)){ toast("Preencha todos os espaços antes de verificar."); return; }
+  if(slots.includes(null)){ toast("Ainda há espaços vazios."); return; }
   const frase=currentFrase();
   const correctAny = frase.respostas.some(r => r.join(",")===slots.join(","));
   if(correctAny) handleCorrect(frase);
   else handleWrong(frase);
 });
+
+$("btnHint").addEventListener("click", ()=>{
+  const frase=currentFrase();
+  const ordem = frase.respostas[0];
+  const idx = slots.indexOf(null);
+  if(game && $("correction").classList.contains("show")){
+    toast("Feche a correção antes de pedir uma dica.");
+    return;
+  }
+  if(idx===-1){ toast("A frase já está completa: clique em Verificar."); return; }
+  slots[idx]=ordem[idx];
+  bank = bank.filter(b=>b!==ordem[idx]);
+  game.dicas++;
+  game.errosNaFrase=0;
+  const custo = 25;
+  state.score = Math.max(0, state.score - custo);
+  saveState();
+  sfxClick();
+  toast(`Dica usada: −${custo} pts`);
+  render();
+  updateHeader();
+});
+
+function recordHistory(correct){
+  const today = todayDateStr();
+  let entry = state.history.find(h=>h.date===today);
+  if(!entry){ entry = {date:today, acertos:0, erros:0}; state.history.push(entry); }
+  if(correct) entry.acertos++; else entry.erros++;
+  if(state.history.length>60) state.history = state.history.slice(-60);
+}
 
 function handleCorrect(frase){
   game.acertos++;
@@ -1066,16 +1235,27 @@ function handleCorrect(frase){
   state.score += pts;
   state.solved[game.chapterId+"_"+frase.id]=true;
   state.stats[game.chapterId].acertos++;
+  recordHistory(true);
   saveState();
+  sfxAcertou();
   showCorrection(true, pts, frase, mult);
 }
 function handleWrong(frase){
   game.erros++;
   game.streak=0;
+  game.errosNaFrase++;
   state.stats[game.chapterId].erros++;
+  recordHistory(false);
   saveState();
-  document.querySelectorAll(".slot-cell").forEach(c=>{
-    c.style.animation="none"; void c.offsetWidth; c.style.animation="";
+  sfxErrou();
+  // marca cada espaço: verde se a palavra já está no lugar certo,
+  // vermelho se está fora do lugar, sem revelar a resposta completa de imediato.
+  const ordem = frase.respostas[0];
+  document.querySelectorAll(".slot-cell").forEach((cell,i)=>{
+    cell.classList.remove("slot-good","slot-bad");
+    const num = parseInt(cell.dataset.index,10);
+    if(slots[num]===ordem[num]) cell.classList.add("slot-good");
+    else cell.classList.add("slot-bad");
   });
   showCorrection(false, 0, frase, 1);
 }
@@ -1092,24 +1272,41 @@ function buildRecapHTML(frase, order){
   return order.map(i=>frase.blocos[i]).join(" ") + ".";
 }
 
+const ELOGIOS = [
+  "Correto.", "Frase certa.", "Isso mesmo.", "Muito bem.", "Acertou.",
+  "Boa: a concordância está certinha.", "Certo, sem erros.", "Ótimo.",
+];
+const CONSOLOS = [
+  "Quase.", "Não foi dessa vez.", "Essa era mais difícil.", "Ainda não, mas você chega lá.",
+  "Não foi agora. Veja a explicação abaixo.", "Errar também ensina.",
+];
+
 function showCorrection(correct, pts, frase, mult){
   const mark=$("verdictMark");
   const text=$("verdictText");
+  const reveal = correct || game.errosNaFrase>=2;
   if(correct){
     mark.setAttribute("class","verdict-mark good");
     mark.innerHTML=`<path d="M6 21 L16 30 L34 10"/>`;
     text.className="verdict-text good";
-    text.textContent="Muito bem!";
+    text.textContent = ELOGIOS[Math.floor(Math.random()*ELOGIOS.length)];
     $("verdictPoints").textContent = mult>1 ? `+${pts} pts (sequência x${mult})` : `+${pts} pts`;
   }else{
     mark.setAttribute("class","verdict-mark bad");
     mark.innerHTML=`<path d="M10 10 L30 30 M30 10 L10 30"/>`;
     text.className="verdict-text bad";
-    text.textContent="Quase lá!";
-    $("verdictPoints").textContent="0 pts — veja a correção";
+    text.textContent = CONSOLOS[Math.floor(Math.random()*CONSOLOS.length)];
+    $("verdictPoints").textContent = reveal ? "veja a correção abaixo" : `${game.errosNaFrase}ª tentativa: veja os espaços marcados`;
   }
   const correctOrder=frase.respostas[0];
-  $("recapFrase").innerHTML = buildRecapHTML(frase, correctOrder);
+  if(reveal){
+    $("recapFrase").style.fontWeight="";
+    $("recapFrase").innerHTML = buildRecapHTML(frase, correctOrder);
+  }else{
+    const linhaCorreta = "Verde indica a palavra no lugar certo; vermelho, fora do lugar. Tente novamente.";
+    $("recapFrase").textContent = linhaCorreta;
+    $("recapFrase").style.fontWeight="700";
+  }
   $("explicacaoTexto").textContent = frase.explicacao;
   $("btnContinue").textContent = correct ? "Próxima frase" : "Tentar de novo";
   $("correction").classList.add("show");
@@ -1122,8 +1319,10 @@ $("btnContinue").addEventListener("click", ()=>{
   if(wasCorrect){
     if(game.current < game.phrases.length-1){
       game.current++;
+      game.errosNaFrase=0;
       loadPhrase();
     }else{
+      game.errosNaFrase=0;
       finishChapter();
     }
   }else{
@@ -1150,19 +1349,18 @@ function finishChapter(){
   state.stats[game.chapterId].melhor = Math.max(state.stats[game.chapterId].melhor, pct);
   if(pct>=60 && idx<ORDER.length-1 && state.unlocked<idx+1){
     state.unlocked = idx+1;
-    toast("Novo capítulo desbloqueado!");
+    toast("Nova fase liberada.");
   }
   saveState();
 
   $("summaryGrade").textContent = pct+"%";
   $("repAcertos").textContent = game.acertos;
   $("repErros").textContent = game.erros;
-  $("repDicas").textContent = game.dicas;
   $("repPontos").textContent = game.pontosGanhos;
   $("teacherRemark").textContent =
-    pct>=90 ? "Excelente! Você domina este capítulo." :
-    pct>=60 ? "Bom trabalho — continue praticando." :
-    "Vale a pena refazer este capítulo com calma.";
+    pct>=90 ? "Ótimo desempenho nessa fase." :
+    pct>=60 ? "Bom resultado. Mais algumas rodadas e você domina essa fase." :
+    "Errar faz parte do aprendizado. Tente novamente com calma.";
   showScreen("summary");
 }
 $("btnRepeat").addEventListener("click", ()=> startChapter(game.chapterId));
@@ -1173,7 +1371,7 @@ $("btnRepeat").addEventListener("click", ()=> startChapter(game.chapterId));
 function startDaily(){
   const txt = todaysDailyText();
   const frase = buildDailyFrase(txt);
-  game = { chapterId:"daily", phrases:[frase], current:0, acertos:0, erros:0, dicas:0, streak:0, pontosGanhos:0 };
+  game = { chapterId:"daily", phrases:[frase], current:0, acertos:0, erros:0, dicas:0, streak:0, pontosGanhos:0, errosNaFrase:0 };
   showScreen("game");
   loadPhrase();
 }
@@ -1189,7 +1387,6 @@ function finishDaily(){
   state.daily.lastSolvedDate = today;
   state.daily.melhorStreak = Math.max(state.daily.melhorStreak||0, state.daily.streak);
   state.daily.tentativasHoje = game.erros+1;
-  state.daily.dicasHoje = game.dicas;
   state.daily.pontosHoje = game.pontosGanhos;
   saveState();
   renderDailyResult();
@@ -1199,7 +1396,6 @@ function finishDaily(){
 function renderDailyResult(){
   $("dailyStreakNum").textContent = state.daily.streak||0;
   $("dailyTentativas").textContent = state.daily.tentativasHoje||1;
-  $("dailyDicas").textContent = state.daily.dicasHoje||0;
   $("dailyMelhor").textContent = state.daily.melhorStreak||0;
   $("dailyPontos").textContent = state.daily.pontosHoje||0;
   const txt = todaysDailyText();
@@ -1212,12 +1408,14 @@ function renderDailyResult(){
 function renderDailyCard(){
   const today = todayDateStr();
   if(state.daily.lastSolvedDate===today){
-    $("dailyCardSub").textContent = `Resolvido hoje — sequência de ${state.daily.streak} dia(s). Volte amanhã!`;
+    $("dailyCardSub").textContent = state.daily.streak>1
+      ? `Desafio de hoje concluído: ${state.daily.streak} dias seguidos. Volte amanhã.`
+      : `Desafio de hoje concluído. Volte amanhã para continuar.`;
     $("btnDailyPlay").textContent = "Ver resultado";
   }else{
     $("dailyCardSub").textContent = state.daily.streak>0
-      ? `Sequência atual: ${state.daily.streak} dia(s). Não deixe zerar!`
-      : `Monte o mini-texto a partir de uma pista.`;
+      ? `Sequência atual de ${state.daily.streak} dia(s).`
+      : `Um provérbio ou mini-poema novo a cada dia. Só uma tentativa por dia.`;
     $("btnDailyPlay").textContent = "Jogar";
   }
 }
@@ -1230,10 +1428,385 @@ $("btnDailyPlay").addEventListener("click", ()=>{
   }
 });
 $("btnDailyBackHome").addEventListener("click", ()=>{ renderHome(); showScreen("home"); });
+$("btnDailyShare").addEventListener("click", async ()=>{
+  const streak = state.daily.streak||0;
+  const tent = state.daily.tentativasHoje||1;
+  const txt = todaysDailyText();
+  const texto = `Monte a Frase: desafio do dia\n`
+    + `${streak} dia${streak===1?"":"s"} seguido${streak===1?"":"s"} · ${txt.tipo} em ${tent} tentativa${tent===1?"":"s"}`;
+  try{
+    await navigator.clipboard.writeText(texto);
+    toast("Resultado copiado.");
+  }catch(e){
+    toast("Não foi possível copiar automaticamente.");
+  }
+});
+
+/* =========================================================
+   TÍTULOS, CONQUISTAS E ESTATÍSTICAS
+   ========================================================= */
+const TITULOS = [
+  {min:0,    nome:"Aprendiz de Português"},
+  {min:500,  nome:"Estudante Aplicado"},
+  {min:1500, nome:"Bom de Gramática"},
+  {min:3000, nome:"Mestre das Palavras"},
+  {min:6000, nome:"Especialista em Língua Portuguesa"},
+];
+function tituloAtual(score){
+  let nome = TITULOS[0].nome;
+  for(const t of TITULOS){ if(score>=t.min) nome=t.nome; }
+  return nome;
+}
+const BADGES = [
+  {id:"facil",   nome:"Base Sólida",       cond:()=> state.stats.facil.melhor>=90},
+  {id:"medio",   nome:"Bom de Regência",   cond:()=> state.stats.medio.melhor>=90},
+  {id:"dificil", nome:"Domínio das Orações",cond:()=> state.stats.dificil.melhor>=90},
+  {id:"expert",  nome:"Domínio da Crase",   cond:()=> state.stats.expert.melhor>=90},
+  {id:"streak7", nome:"Uma Semana Seguida",cond:()=> (state.daily.melhorStreak||0)>=7},
+  {id:"score",   nome:"Mil Pontos",       cond:()=> state.score>=1000},
+];
+
+function buildChartSVG(){
+  const days = state.history.slice(-14);
+  if(days.length===0) return `<p class="chart-empty">Jogue mais alguns dias para ver o gráfico aqui.</p>`;
+  const w=440, h=120, pad=8;
+  const maxTotal = Math.max(1, ...days.map(d=>d.acertos+d.erros));
+  const barW = (w-pad*2)/days.length;
+  let bars="";
+  days.forEach((d,i)=>{
+    const total = d.acertos+d.erros;
+    const x = pad + i*barW;
+    const barH = total===0 ? 0 : (total/maxTotal)*(h-pad*2);
+    const acertoH = total===0 ? 0 : (d.acertos/total)*barH;
+    const erroH = barH-acertoH;
+    const yBase = h-pad;
+    if(erroH>0) bars += `<rect x="${x+2}" y="${yBase-barH}" width="${barW-4}" height="${erroH}" fill="var(--border-strong)" rx="2"/>`;
+    if(acertoH>0) bars += `<rect x="${x+2}" y="${yBase-acertoH}" width="${barW-4}" height="${acertoH}" fill="var(--accent)" rx="2"/>`;
+  });
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">${bars}</svg>`;
+}
+
+function renderStats(){
+  $("statsTitle").textContent = tituloAtual(state.score);
+  $("statsScore").textContent = state.score;
+  $("statsDays").textContent = state.history.length;
+  $("statsStreak").textContent = state.daily.streak||0;
+  $("statsChart").innerHTML = buildChartSVG();
+
+  let hardestId=null, hardestPct=101;
+  ORDER.forEach(id=>{
+    const st=state.stats[id];
+    const total=st.acertos+st.erros;
+    if(total>=4){
+      const pct=Math.round(st.acertos/total*100);
+      if(pct<hardestPct){ hardestPct=pct; hardestId=id; }
+    }
+  });
+
+  const cont=$("statsChapters");
+  cont.innerHTML="";
+  CHAPTERS.forEach(ch=>{
+    const st=state.stats[ch.id];
+    const total=st.acertos+st.erros;
+    const pct = total? Math.round(st.acertos/total*100) : 0;
+    const row=document.createElement("div");
+    row.className="stats-chapter-row"+(ch.id===hardestId?" hardest":"");
+    row.innerHTML = `
+      <div class="info">
+        <span class="label">${ch.nome}</span>
+        <span class="sub">${total? `${pct}% de aproveitamento · ${st.acertos} acertos, ${st.erros} erros` : "ainda não jogada"}</span>
+      </div>
+      ${starsHTMLFallback(st.melhor)}
+    `;
+    cont.appendChild(row);
+  });
+
+  const badgesCont=$("statsBadges");
+  badgesCont.innerHTML="";
+  BADGES.forEach(b=>{
+    const earned=b.cond();
+    const pill=document.createElement("span");
+    pill.className="badge-pill"+(earned?" earned":"");
+    pill.textContent=b.nome;
+    badgesCont.appendChild(pill);
+  });
+}
+function starsHTMLFallback(melhor){
+  const n = melhor>=90?3:melhor>=70?2:melhor>=40?1:0;
+  return `<span class="stars">${"★".repeat(n)}${"☆".repeat(3-n)}</span>`;
+}
+$("btnShowStats").addEventListener("click", ()=>{ renderStats(); showScreen("stats"); });
+$("btnStatsBackHome").addEventListener("click", ()=>{ renderHome(); showScreen("home"); });
+
+/* =========================================================
+   PEGADINHA: sequência secreta de capítulos no sumário
+   ========================================================= */
+const EGG_SEQUENCE = ["dificil","facil","dificil","expert","facil"];
+let eggBuffer = [];
+function trackEggSequence(chapterId){
+  eggBuffer.push(chapterId);
+  if(eggBuffer.length > EGG_SEQUENCE.length) eggBuffer.shift();
+  if(eggBuffer.length===EGG_SEQUENCE.length && eggBuffer.every((id,i)=>id===EGG_SEQUENCE[i])){
+    eggBuffer=[];
+    triggerEgg();
+  }
+}
+function triggerEgg(){
+  $("eggImage").src = EGG_IMG;
+  $("eggBackdrop").classList.add("show");
+}
+$("eggBackdrop").addEventListener("click", ()=> $("eggBackdrop").classList.remove("show"));
+
+/* =========================================================
+   AJUDA
+   ========================================================= */
+$("btnHelp").addEventListener("click", ()=>{ syncSoundButton(); $("helpBackdrop").classList.add("show"); });
+$("btnHelpClose").addEventListener("click", ()=> $("helpBackdrop").classList.remove("show"));
+$("helpBackdrop").addEventListener("click", (e)=>{
+  if(e.target.id==="helpBackdrop") $("helpBackdrop").classList.remove("show");
+});
+
+/* =========================================================
+   MÚSICA 8-BIT (Web Audio API, gerada na hora, sem arquivo externo)
+   Composição: progressão de acordes C–G–Am–F, melodia + baixo
+   dedilhado + bumbo + chimbal, tudo sintetizado em tempo real.
+   ========================================================= */
+let audioCtx=null, musicPlaying=false, schedulerTimer=null, masterGain=null, musicBus=null, noiseBuffer=null,
+    nextNoteTime=0, currentStep=0;
+
+const STEP = 0.15;
+// cada acorde toca por 8 passos; a melodia sobe uma oitava na segunda
+// passagem da progressão, para variar um pouco o som.
+const CHORDS = [
+  {arp:[523.25,392.00,329.63,392.00,523.25,392.00,440.00,392.00], bass:130.81}, // C
+  {arp:[587.33,493.88,392.00,493.88,587.33,493.88,523.25,493.88], bass:98.00},  // G
+  {arp:[659.25,523.25,440.00,523.25,659.25,523.25,587.33,523.25], bass:110.00}, // Am
+  {arp:[698.46,523.25,440.00,523.25,698.46,587.33,523.25,440.00], bass:87.31},  // F
+];
+function buildSong(){
+  const melody=[], bass=[], kick=[], hat=[];
+  [1,2].forEach(pass=>{
+    const mult = pass===1 ? 1 : 2;
+    CHORDS.forEach(ch=>{
+      ch.arp.forEach((f,i)=>{
+        melody.push(f*mult);
+        bass.push(i===0 ? ch.bass : 0);
+        kick.push(i===0 || i===4 ? 1 : 0);
+        hat.push(i%2===1 ? 1 : 0);
+      });
+    });
+  });
+  return {melody, bass, kick, hat};
+}
+const SONG = buildSong();
+
+function createNoiseBuffer(){
+  const size = audioCtx.sampleRate*0.2;
+  const buf = audioCtx.createBuffer(1, size, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<size;i++) data[i]=Math.random()*2-1;
+  return buf;
+}
+function playTone(freq, time, dur, type, vol){
+  if(!freq) return;
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+  osc.type=type;
+  osc.frequency.value=freq;
+  gain.gain.setValueAtTime(vol, time);
+  gain.gain.setValueAtTime(vol, time+dur*0.6);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time+dur);
+  osc.connect(gain).connect(musicBus);
+  osc.start(time);
+  osc.stop(time+dur);
+}
+function playKick(time){
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+  osc.type="sine";
+  osc.frequency.setValueAtTime(150, time);
+  osc.frequency.exponentialRampToValueAtTime(45, time+0.12);
+  gain.gain.setValueAtTime(0.35, time);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time+0.16);
+  osc.connect(gain).connect(musicBus);
+  osc.start(time);
+  osc.stop(time+0.18);
+}
+function playHat(time){
+  const src=audioCtx.createBufferSource();
+  src.buffer=noiseBuffer;
+  const filt=audioCtx.createBiquadFilter();
+  filt.type="highpass";
+  filt.frequency.value=7000;
+  const gain=audioCtx.createGain();
+  gain.gain.setValueAtTime(0.09, time);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time+0.045);
+  src.connect(filt).connect(gain).connect(musicBus);
+  src.start(time);
+  src.stop(time+0.05);
+}
+// Toca as notas da música com um agendador de olhar à frente:
+// em vez de planejar o loop inteiro de uma vez (o que deixava notas
+// tocando depois do pause), o código agenda apenas ~100ms à frente.
+// Assim, pausar corta o som imediatamente e não sobra áudio duplicado.
+const LOOKAHEAD = 0.12;
+function scheduleStep(i, t){
+  playTone(SONG.melody[i], t, STEP*0.9, "square", 0.14);
+  if(SONG.bass[i]) playTone(SONG.bass[i], t, STEP*5.5, "triangle", 0.16);
+  if(SONG.kick[i]) playKick(t);
+  if(SONG.hat[i]) playHat(t);
+}
+function schedulerTick(){
+  if(!musicPlaying){ if(schedulerTimer){ clearInterval(schedulerTimer); schedulerTimer=null; } return; }
+  while(nextNoteTime < audioCtx.currentTime + LOOKAHEAD){
+    scheduleStep(currentStep, nextNoteTime);
+    nextNoteTime += STEP;
+    currentStep = (currentStep+1) % SONG.melody.length;
+  }
+}
+function startMusic(){
+  if(musicPlaying) return;
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = state.musicVolume!=null ? state.musicVolume : 0.8;
+    masterGain.connect(audioCtx.destination);
+  }
+  // bus novo a cada start: qualquer nota pendente de um play anterior
+  // fica presa no bus antigo (já desconectado) e não volta a soar.
+  musicBus = audioCtx.createGain();
+  musicBus.gain.value = 1;
+  musicBus.connect(masterGain);
+  if(!noiseBuffer) noiseBuffer = createNoiseBuffer();
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  musicPlaying=true;
+  currentStep=0;
+  nextNoteTime = audioCtx.currentTime + 0.06;
+  schedulerTimer = setInterval(schedulerTick, 25);
+  syncSoundButton();
+}
+function stopMusic(){
+  musicPlaying=false;
+  if(schedulerTimer){ clearInterval(schedulerTimer); schedulerTimer=null; }
+  // desconecta o bus imediatamente: as últimas notas agendadas somem na hora
+  // e não se misturam com a próxima reprodução.
+  if(musicBus){
+    musicBus.gain.setTargetAtTime(0, audioCtx.currentTime, 0.005);
+    musicBus.disconnect();
+    musicBus = null;
+  }
+  syncSoundButton();
+}
+function setMusicVolume(v){
+  state.musicVolume = Math.max(0, Math.min(1.4, Math.round(v*100)/100));
+  saveState();
+  if(masterGain) masterGain.gain.setTargetAtTime(state.musicVolume, audioCtx.currentTime, 0.05);
+  syncSoundButton();
+}
+function syncSoundButton(){
+  const btn=$("btnSoundToggle");
+  if(!btn) return;
+  btn.textContent = musicPlaying ? "Pausar" : "Tocar";
+  btn.classList.toggle("active", musicPlaying);
+  const vol = state.musicVolume!=null ? state.musicVolume : 0.8;
+  $("volLabel").textContent = Math.round((vol/1.0)*100)+"%";
+}
+$("btnSoundToggle").addEventListener("click", ()=>{
+  state.soundOn = !musicPlaying;
+  saveState();
+  if(musicPlaying) stopMusic(); else startMusic();
+});
+$("btnVolDown").addEventListener("click", ()=>{
+  if(!musicPlaying) startMusic();
+  setMusicVolume((state.musicVolume!=null?state.musicVolume:0.8) - 0.2);
+});
+$("btnVolUp").addEventListener("click", ()=>{
+  if(!musicPlaying) startMusic();
+  setMusicVolume((state.musicVolume!=null?state.musicVolume:0.8) + 0.2);
+});
+// Como os navegadores só permitem tocar áudio depois de uma interação do usuário,
+// a música é ligada automaticamente assim que a pessoa toca em qualquer parte
+// da página pela primeira vez.
+function armAutoStartMusic(){
+  const tryStart = (e)=>{
+    // não inicia a música automaticamente se o clique foi no botão de som
+    // dentro das preferências: nesse caso, quem decide é o usuário.
+    const insideHelp = e.target && e.target.closest && e.target.closest("#helpBackdrop");
+    if(state.soundOn!==false && !insideHelp) startMusic();
+    document.removeEventListener("pointerdown", tryStart, true);
+    document.removeEventListener("keydown", tryStart, true);
+  };
+  document.addEventListener("pointerdown", tryStart, true);
+  document.addEventListener("keydown", tryStart, true);
+}
+
+/* =========================================================
+   EFEITOS SONOROS 8-BIT (acertou / errou)
+   Sons curtos de videogame clássico, gerados na hora.
+   Cada um toca pelo canal masterGain, então é possível ouvir
+   mesmo com a música de fundo pausada.
+   ========================================================= */
+function ensureCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(!masterGain){
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = state.musicVolume!=null ? state.musicVolume : 0.8;
+    masterGain.connect(audioCtx.destination);
+  }
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  return audioCtx;
+}
+function sfxNote(freq, dur, when, type, vol){
+  const ctx = ensureCtx();
+  const t0 = ctx.currentTime + when;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type || "square";
+  osc.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(vol, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  osc.connect(g).connect(masterGain);
+  osc.start(t0);
+  osc.stop(t0+dur+0.02);
+  return osc;
+}
+function sfxAcertou(){
+  // arpejo subindo: C5 → E5 → G5 → C6
+  sfxNote(523.25, 0.12, 0.00, "square", 0.16);
+  sfxNote(659.25, 0.12, 0.08, "square", 0.16);
+  sfxNote(783.99, 0.16, 0.16, "square", 0.16);
+  sfxNote(1046.50, 0.30, 0.24, "square", 0.18);
+}
+function sfxErrou(){
+  // dois tons descendentes
+  sfxNote(392.00, 0.18, 0.00, "square", 0.15);
+  sfxNote(329.63, 0.28, 0.15, "square", 0.15);
+}
+function sfxClick(){
+  // som curto ao mexer nas fichas
+  sfxNote(880, 0.05, 0, "square", 0.06);
+}
+
+/* =========================================================
+   TAMANHO DO TEXTO
+   ========================================================= */
+const FONT_SIZES = {small:15, medium:16, large:19};
+function applyFontSize(){
+  const px = FONT_SIZES[state.fontSizeKey] || 16;
+  document.documentElement.style.fontSize = px+"px";
+  ["fontSmall","fontMedium","fontLarge"].forEach(id=>$(id).classList.remove("active"));
+  const key = state.fontSizeKey || "medium";
+  $(key==="small"?"fontSmall":key==="large"?"fontLarge":"fontMedium").classList.add("active");
+}
+$("fontSmall").addEventListener("click", ()=>{ state.fontSizeKey="small"; saveState(); applyFontSize(); });
+$("fontMedium").addEventListener("click", ()=>{ state.fontSizeKey="medium"; saveState(); applyFontSize(); });
+$("fontLarge").addEventListener("click", ()=>{ state.fontSizeKey="large"; saveState(); applyFontSize(); });
 
 /* =========================================================
    INÍCIO
    ========================================================= */
+applyFontSize();
+if(state.soundOn!==false) armAutoStartMusic();
 renderHome();
 showScreen("home");
 
