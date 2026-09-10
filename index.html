@@ -1433,7 +1433,9 @@ $("btnClear").addEventListener("click", ()=>{
   render();
 });
 
-/*fim de capitulo */
+/* =========================================================
+   FIM DE CAPÍTULO
+   ========================================================= */
 function finishChapter(){
   if(game.chapterId==="daily"){ finishDaily(); return; }
   const total = game.acertos+game.erros;
@@ -1466,7 +1468,9 @@ $("btnShareChapter").addEventListener("click", ()=>{
   shareText(texto);
 });
 
-/* desafio do dia */
+/* =========================================================
+   DESAFIO DO DIA
+   ========================================================= */
 function startDaily(){
   const txt = todaysDailyText();
   const frase = buildDailyFrase(txt);
@@ -1538,7 +1542,9 @@ $("btnDailyShare").addEventListener("click", ()=>{
   shareText(texto);
 });
 
-/*titulos, conquistas e estatisticas*/
+/* =========================================================
+   TÍTULOS, CONQUISTAS E ESTATÍSTICAS
+   ========================================================= */
 const TITULOS = [
   {min:0,    nome:"Aprendiz de Português"},
   {min:500,  nome:"Estudante Aplicado"},
@@ -1643,7 +1649,9 @@ function starsHTMLFallback(melhor){
 $("btnShowStats").addEventListener("click", ()=>{ renderStats(); showScreen("stats"); });
 $("btnStatsBackHome").addEventListener("click", ()=>{ renderHome(); showScreen("home"); });
 
-/* WE ARE CHARLIE KIRKKK */
+/* =========================================================
+   PEGADINHA: sequência secreta de capítulos no sumário
+   ========================================================= */
 const EGG_SEQUENCE = ["dificil","facil","dificil","expert","facil"];
 let eggBuffer = [];
 function trackEggSequence(chapterId){
@@ -1660,14 +1668,18 @@ function triggerEgg(){
 }
 $("eggBackdrop").addEventListener("click", ()=> $("eggBackdrop").classList.remove("show"));
 
-/*ayudameeee */
+/* =========================================================
+   AJUDA
+   ========================================================= */
 $("btnHelp").addEventListener("click", ()=>{ syncSoundButton(); $("helpBackdrop").classList.add("show"); });
 $("btnHelpClose").addEventListener("click", ()=> $("helpBackdrop").classList.remove("show"));
 $("helpBackdrop").addEventListener("click", (e)=>{
   if(e.target.id==="helpBackdrop") $("helpBackdrop").classList.remove("show");
 });
 
-/*popup de pontuaçao */
+/* =========================================================
+   POPUP DE PONTUAÇÃO (clique no placar do topo)
+   ========================================================= */
 function renderScoreModal(){
   $("scoreModalScore").textContent = state.score;
   $("scoreModalTitle").textContent = tituloAtual(state.score);
@@ -1712,7 +1724,10 @@ $("btnScoreShare").addEventListener("click", ()=>{
   shareText(texto);
 });
 
-/*musica de fundo*/
+/* =========================================================
+   MÚSICA DE FUNDO
+   Toca o arquivo de áudio embutido no elemento <audio id="bgMusic">.
+   ========================================================= */
 const bgMusic = document.getElementById("bgMusic");
 let musicPlaying = false;
 let audioCtx=null, masterGain=null; // usados só pelos efeitos sonoros (clique/acerto/erro) abaixo
@@ -1779,7 +1794,12 @@ function armAutoStartMusic(){
   document.addEventListener("keydown", tryStart, true);
 }
 
-/* efeitos de acertou e errou*/
+/* =========================================================
+   EFEITOS SONOROS 8-BIT (acertou / errou)
+   Sons curtos de videogame clássico, gerados na hora.
+   Cada um toca pelo canal masterGain, então é possível ouvir
+   mesmo com a música de fundo pausada.
+   ========================================================= */
 function ensureCtx(){
   if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
   if(!masterGain){
@@ -1820,7 +1840,9 @@ function sfxClick(){
   sfxNote(660, 0.07, 0, "sine", 0.035);
 }
 
-/* tamanho do pirocao do texto  */
+/* =========================================================
+   TAMANHO DO TEXTO
+   ========================================================= */
 const FONT_SIZES = {small:15, medium:16, large:19};
 function applyFontSize(){
   const px = FONT_SIZES[state.fontSizeKey] || 16;
@@ -1833,7 +1855,9 @@ $("fontSmall").addEventListener("click", ()=>{ state.fontSizeKey="small"; saveSt
 $("fontMedium").addEventListener("click", ()=>{ state.fontSizeKey="medium"; saveState(); applyFontSize(); });
 $("fontLarge").addEventListener("click", ()=>{ state.fontSizeKey="large"; saveState(); applyFontSize(); });
 
-/*inicio*/
+/* =========================================================
+   INÍCIO
+   ========================================================= */
 applyFontSize();
 if(state.soundOn!==false) armAutoStartMusic();
 renderHome();
