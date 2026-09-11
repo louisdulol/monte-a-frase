@@ -1713,10 +1713,21 @@ $("btnScoreShare").addEventListener("click", ()=>{
 const bgMusic = document.getElementById("bgMusic");
 let musicPlaying = false;
 let audioCtx=null, masterGain=null; // usados só pelos efeitos sonoros (clique/acerto/erro) abaixo
+let musicCtx=null, musicGainNode=null, musicSource=null; // usados pra permitir volume >100%
+const MUSIC_BOOST = 2.5; // ganho extra acima de 100%; ajuste pra mais ou menos volume
 
+function ensureMusicGraph(){
+  if(musicSource) return;
+  musicCtx = new (window.AudioContext||window.webkitAudioContext)();
+  musicSource = musicCtx.createMediaElementSource(bgMusic);
+  musicGainNode = musicCtx.createGain();
+  musicSource.connect(musicGainNode).connect(musicCtx.destination);
+}
 function applyMusicVolume(){
+  ensureMusicGraph();
+  if(musicCtx.state==="suspended") musicCtx.resume();
   const vol = state.musicVolume!=null ? state.musicVolume : 0.8;
-  bgMusic.volume = Math.max(0, Math.min(1, vol));
+  musicGainNode.gain.value = Math.max(0, vol) * MUSIC_BOOST;
 }
 function startMusic(){
   applyMusicVolume();
