@@ -1714,7 +1714,7 @@ const bgMusic = document.getElementById("bgMusic");
 let musicPlaying = false;
 let audioCtx=null, masterGain=null; // usados só pelos efeitos sonoros (clique/acerto/erro) abaixo
 let musicCtx=null, musicGainNode=null, musicSource=null, musicCompressor=null; // usados pra deixar a música mais alta
-const MUSIC_BOOST = 6; // ganho geral aplicado em todos os níveis de volume; ajuste pra mais ou menos
+const MUSIC_BOOST = 4; // ganho geral aplicado em todos os níveis de volume; ajuste pra mais ou menos
 
 function ensureMusicGraph(){
   if(musicSource) return;
