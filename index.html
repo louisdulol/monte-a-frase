@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
+<!-- Firebase (ranking global entre jogadores) — só é usado se FIREBASE_CONFIG, lá embaixo no script, for preenchido -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bg:#20272a;
@@ -83,6 +86,12 @@
     font-family:var(--font-display); font-size:1.05rem; font-weight:700;
     color:var(--accent); margin:0 0 14px;
   }
+  .profile-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius);
+    padding:10px 14px; margin-bottom:18px; font-size:.85rem; color:var(--text);
+  }
+  #profileBarText{font-weight:700;}
 
   /* ============ SUMÁRIO DE CAPÍTULOS ============ */
   .toc{display:flex; flex-direction:column; gap:10px; margin-bottom:22px;}
@@ -279,6 +288,20 @@
   .score-modal-row .diff-dot{margin-right:0;}
   .score-modal-row .name{flex:1; font-size:.88rem; font-weight:700; color:var(--text);}
   .score-modal-row .pct{font-size:.82rem; color:var(--text-soft); font-weight:700;}
+  .ranking-row{display:flex; align-items:center; gap:10px; background:var(--bg); border-radius:var(--radius); padding:9px 12px;}
+  .ranking-row.me{border:1.5px solid var(--accent);}
+  .ranking-row .pos{font-weight:800; color:var(--text-soft); font-size:.85rem; width:26px; flex-shrink:0;}
+  .ranking-row .info{flex:1; min-width:0;}
+  .ranking-row .nome{font-size:.9rem; font-weight:700; color:var(--text); display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .ranking-row .turma{font-size:.72rem; color:var(--text-soft);}
+  .ranking-row .streak{font-weight:800; color:var(--accent); font-size:.9rem; white-space:nowrap;}
+  .profile-field{margin-bottom:14px;}
+  .profile-field label{display:block; font-size:.78rem; color:var(--text-soft); margin-bottom:5px;}
+  .profile-field input{
+    width:100%; background:var(--bg); border:1.5px solid var(--border-strong); border-radius:10px;
+    color:var(--text); font-size:.95rem; padding:10px 12px; font-family:inherit;
+  }
+  .profile-field input:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
   .score-pill{cursor:pointer;}
   .settings-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:10px;}
   .settings-row span{font-size:.9rem; color:var(--text);}
@@ -359,6 +382,10 @@
 
   <!-- ================= HOME / SUMÁRIO ================= -->
   <section class="screen active" id="screen-home">
+    <div class="profile-bar" id="profileBar">
+      <span id="profileBarText">Sem perfil ainda</span>
+      <button class="link-btn" id="btnProfileEdit">Criar perfil</button>
+    </div>
     <p class="eyebrow">Desafio de hoje</p>
     <div class="daily-card" id="dailyCard">
       <div class="daily-card-text">
@@ -368,12 +395,21 @@
       <button class="btn-outline" id="btnDailyPlay">Jogar</button>
     </div>
 
+    <div class="daily-card" id="survivalCard" style="margin-top:12px; border-color:var(--border-strong);">
+      <div class="daily-card-text">
+        <span class="daily-card-title">Modo Sobrevivência</span>
+        <span class="daily-card-sub" id="survivalCardSub">Frases de todos os capítulos, embaralhadas. Erre uma e a sequência acaba.</span>
+      </div>
+      <button class="btn-outline" id="btnSurvivalPlay">Jogar</button>
+    </div>
+
     <p class="eyebrow" style="margin-top:26px;">Escolha sua fase</p>
     <div class="toc" id="toc"></div>
     <button class="btn-primary" id="btnJogar" disabled>Começar</button>
     <p class="meta-line" id="homeStats"></p>
     <div style="text-align:center; margin-top:14px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
       <button class="link-btn" id="btnShowStats">Ver minhas estatísticas</button>
+      <button class="link-btn" id="btnShowRanking">Ranking da escola</button>
       <button class="link-btn" id="btnReset">Recomeçar do zero</button>
     </div>
   </section>
@@ -443,6 +479,25 @@
     <div class="summary-actions">
       <button class="btn-outline" id="btnDailyShare">Compartilhar</button>
       <button class="link-btn" id="btnDailyBackHome">Voltar pro início</button>
+    </div>
+  </section>
+
+  <!-- ================= RESULTADO DO MODO SOBREVIVÊNCIA ================= -->
+  <section class="screen" id="screen-survival-result">
+    <p class="eyebrow">Modo Sobrevivência</p>
+    <div class="grade" id="survivalStreakNum">0</div>
+    <p class="grade-caption">de sequência</p>
+    <div class="stat-grid">
+      <div class="stat-box"><span class="stat-num" id="survivalMelhor">0</span><span class="stat-lbl">Recorde</span></div>
+      <div class="stat-box"><span class="stat-num" id="survivalDificuldade">—</span><span class="stat-lbl">Nível alcançado</span></div>
+    </div>
+    <p class="teacher-remark" id="survivalRecap"></p>
+    <p class="eyebrow" style="margin-top:10px;">Ranking (neste aparelho)</p>
+    <div class="toc" id="survivalRankingList" style="margin-bottom:18px;"></div>
+    <div class="summary-actions">
+      <button class="btn-primary" id="btnSurvivalAgain">Jogar de novo</button>
+      <button class="btn-outline" id="btnSurvivalShare">Compartilhar</button>
+      <button class="link-btn" id="btnSurvivalBackHome">Voltar pro início</button>
     </div>
   </section>
 
@@ -530,7 +585,35 @@
 
 <div class="toast" id="toast"></div>
 
-<audio id="bgMusic" loop preload="auto" src="musica.mp3"></audio>
+<div class="help-backdrop" id="profileBackdrop">
+  <div class="help-card">
+    <button class="icon-btn score-modal-close" id="btnProfileClose" aria-label="Fechar">✕</button>
+    <h2>Seu perfil</h2>
+    <div class="profile-field">
+      <label for="profileNome">Nome (aparece no ranking)</label>
+      <input type="text" id="profileNome" maxlength="18" placeholder="Ex: Maria S.">
+    </div>
+    <div class="profile-field">
+      <label for="profileTurma">Turma (opcional)</label>
+      <input type="text" id="profileTurma" maxlength="12" placeholder="Ex: 9ºA">
+    </div>
+    <button class="btn-primary" id="btnProfileSave">Salvar</button>
+  </div>
+</div>
+
+<div class="help-backdrop" id="rankingBackdrop">
+  <div class="help-card">
+    <button class="icon-btn score-modal-close" id="btnRankingClose" aria-label="Fechar">✕</button>
+    <p class="eyebrow" style="margin-bottom:2px;">Ranking da escola</p>
+    <p class="score-modal-streak" style="margin-bottom:16px;">Por sequência no Modo Sobrevivência</p>
+    <div class="score-modal-list" id="rankingList"></div>
+    <div class="summary-actions" style="margin-top:20px;">
+      <button class="btn-outline" id="btnRankingRefresh">Atualizar</button>
+    </div>
+  </div>
+</div>
+
+<audio id="bgMusic" preload="auto" src="musica.mp3"></audio>
 
 <script>
 (function(){
@@ -833,7 +916,9 @@ function defaultState(){
   ORDER.forEach(id=>stats[id]={acertos:0,erros:0,dicas:0,melhor:0});
   stats.daily={acertos:0,erros:0,dicas:0,melhor:0};
   return {unlocked:ORDER.length-1, score:0, solved:{}, stats, fontSizeKey:"medium", soundOn:true, musicVolume:0.8, history:[], earnedBadges:[],
-    daily:{lastSolvedDate:null, streak:0, melhorStreak:0, tentativasHoje:0, dicasHoje:0, pontosHoje:0}
+    daily:{lastSolvedDate:null, streak:0, melhorStreak:0, tentativasHoje:0, dicasHoje:0, pontosHoje:0},
+    survival:{melhor:0, ranking:[]},
+    profile:{uid:null, nome:"", turma:""}
   };
 }
 function loadState(){
@@ -846,6 +931,9 @@ function loadState(){
         if(!d.stats.daily) d.stats.daily={acertos:0,erros:0,dicas:0,melhor:0};
         if(typeof d.score!=="number") d.score=0;
         if(!d.daily) d.daily={lastSolvedDate:null, streak:0, melhorStreak:0, tentativasHoje:0, dicasHoje:0, pontosHoje:0};
+        if(!d.survival) d.survival={melhor:0, ranking:[]};
+        if(!Array.isArray(d.survival.ranking)) d.survival.ranking=[];
+        if(!d.profile) d.profile={uid:null, nome:"", turma:""};
         if(!d.fontSizeKey) d.fontSizeKey="medium";
         if(typeof d.soundOn!=="boolean") d.soundOn=true;
         if(typeof d.musicVolume!=="number") d.musicVolume=0.8;
@@ -896,6 +984,140 @@ function buildDailyFrase(txt){
    HELPERS
    ========================================================= */
 const $ = id => document.getElementById(id);
+
+/* =========================================================
+   RANKING GLOBAL (Firebase Firestore)
+   Pra funcionar no GitHub Pages, crie um projeto grátis em
+   https://console.firebase.google.com, ative o Firestore e
+   cole as chaves do seu projeto aqui embaixo. Sem isso, o jogo
+   funciona normalmente, só sem ranking entre jogadores.
+
+   Regras sugeridas no Firestore (aba "Regras"):
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /jogadores/{uid} {
+         allow read: if true;
+         allow create: if request.resource.data.nome is string
+           && request.resource.data.nome.size() <= 24
+           && request.resource.data.melhorStreak is number
+           && request.resource.data.melhorStreak >= 0
+           && request.resource.data.melhorStreak <= 500;
+         allow update: if request.resource.data.melhorStreak is number
+           && request.resource.data.melhorStreak >= resource.data.melhorStreak
+           && request.resource.data.melhorStreak <= 500;
+       }
+     }
+   }
+   ========================================================= */
+const FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: "",
+};
+let db = null;
+if(FIREBASE_CONFIG.apiKey && window.firebase){
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  }catch(e){ db = null; }
+}
+function uid(){
+  if(!state.profile.uid){
+    state.profile.uid = (crypto.randomUUID ? crypto.randomUUID() : ("p"+Date.now()+Math.random().toString(16).slice(2)));
+    saveState();
+  }
+  return state.profile.uid;
+}
+function hasProfile(){ return !!(state.profile && state.profile.nome); }
+function renderProfileBar(){
+  const bar = $("profileBarText");
+  const btn = $("btnProfileEdit");
+  if(hasProfile()){
+    bar.textContent = `Jogando como ${state.profile.nome}${state.profile.turma ? " · "+state.profile.turma : ""}`;
+    btn.textContent = "Editar";
+  }else{
+    bar.textContent = "Crie um perfil pra entrar no ranking da escola";
+    btn.textContent = "Criar perfil";
+  }
+}
+function openProfileModal(){
+  $("profileNome").value = state.profile.nome||"";
+  $("profileTurma").value = state.profile.turma||"";
+  $("profileBackdrop").classList.add("show");
+}
+$("btnProfileEdit").addEventListener("click", openProfileModal);
+$("btnProfileClose").addEventListener("click", ()=> $("profileBackdrop").classList.remove("show"));
+$("profileBackdrop").addEventListener("click", (e)=>{ if(e.target.id==="profileBackdrop") $("profileBackdrop").classList.remove("show"); });
+$("btnProfileSave").addEventListener("click", ()=>{
+  const nome = $("profileNome").value.trim().slice(0,18);
+  const turma = $("profileTurma").value.trim().slice(0,12);
+  if(!nome){ toast("Digite um nome."); return; }
+  state.profile.nome = nome;
+  state.profile.turma = turma;
+  uid();
+  saveState();
+  renderProfileBar();
+  $("profileBackdrop").classList.remove("show");
+  toast("Perfil salvo.");
+  syncGlobalRanking();
+});
+function syncGlobalRanking(){
+  if(!db || !hasProfile()) return;
+  db.collection("jogadores").doc(uid()).set({
+    nome: state.profile.nome,
+    turma: state.profile.turma||"",
+    melhorStreak: state.survival.melhor||0,
+    atualizadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+  }, {merge:true}).catch(()=>{ /* ranking global é só um extra: falha aqui não afeta o jogo local */ });
+}
+function renderRankingList(rows){
+  const list = $("rankingList");
+  list.innerHTML = "";
+  if(!db){
+    list.innerHTML = `<p class="meta-line" style="text-align:left;">Ranking global não configurado. Veja o comentário FIREBASE_CONFIG no código-fonte.</p>`;
+    return;
+  }
+  if(!rows.length){
+    list.innerHTML = `<p class="meta-line" style="text-align:left;">Ninguém no ranking ainda. Jogue o Modo Sobrevivência pra aparecer aqui.</p>`;
+    return;
+  }
+  rows.forEach((r,i)=>{
+    const row = document.createElement("div");
+    row.className = "ranking-row"+(r.id===state.profile.uid ? " me":"");
+    row.innerHTML = `
+      <span class="pos">${i+1}º</span>
+      <span class="info"><span class="nome">${r.nome||"—"}</span>${r.turma ? `<span class="turma">${r.turma}</span>`:""}</span>
+      <span class="streak">${r.melhorStreak||0}</span>
+    `;
+    list.appendChild(row);
+  });
+}
+function openRankingModal(){
+  $("rankingBackdrop").classList.add("show");
+  loadGlobalRanking();
+}
+function loadGlobalRanking(){
+  if(!db){ renderRankingList([]); return; }
+  $("rankingList").innerHTML = `<p class="meta-line" style="text-align:left;">Carregando...</p>`;
+  db.collection("jogadores").orderBy("melhorStreak","desc").limit(30).get()
+    .then(snap=>{
+      const rows = [];
+      snap.forEach(doc=> rows.push({id:doc.id, ...doc.data()}));
+      renderRankingList(rows);
+    })
+    .catch(()=>{
+      $("rankingList").innerHTML = `<p class="meta-line" style="text-align:left;">Não foi possível carregar o ranking agora.</p>`;
+    });
+}
+$("btnShowRanking").addEventListener("click", openRankingModal);
+$("btnRankingRefresh").addEventListener("click", loadGlobalRanking);
+$("btnRankingClose").addEventListener("click", ()=> $("rankingBackdrop").classList.remove("show"));
+$("rankingBackdrop").addEventListener("click", (e)=>{ if(e.target.id==="rankingBackdrop") $("rankingBackdrop").classList.remove("show"); });
+
 function shuffle(arr){
   const a=arr.slice();
   for(let i=a.length-1;i>0;i--){
@@ -913,7 +1135,7 @@ function toast(msg){
   toastTimer=setTimeout(()=>t.classList.remove("show"),2000);
 }
 function showScreen(name){
-  ["home","game","summary","daily-result","stats"].forEach(s=>{
+  ["home","game","summary","daily-result","survival-result","stats"].forEach(s=>{
     $("screen-"+s).classList.toggle("active", s===name);
   });
 }
@@ -981,6 +1203,8 @@ function renderHome(){
   const totalAcertos = ORDER.reduce((s,id)=>s+state.stats[id].acertos,0);
   $("homeStats").textContent = `${state.score} pts · ${totalAcertos} acertos no total`;
   renderDailyCard();
+  renderSurvivalCard();
+  renderProfileBar();
   updateScoreHud();
 }
 
@@ -1025,6 +1249,103 @@ function startChapter(id){
 }
 
 /* =========================================================
+   MODO SOBREVIVÊNCIA
+   Pool combinado de todos os capítulos, dificuldade sobe com a
+   sequência, sem repetir frase até esgotar a faixa atual.
+   ========================================================= */
+const SURVIVAL_TIERS = [
+  {min:0,  max:4,        chapters:["facil","medio"],           nome:"Aquecimento"},
+  {min:5,  max:9,        chapters:["facil","medio","dificil"], nome:"Ritmo"},
+  {min:10, max:14,       chapters:["medio","dificil","expert"],nome:"Tensão"},
+  {min:15, max:Infinity, chapters:["dificil","expert","longas"],nome:"Modo Expert"},
+];
+function tierForStreak(streak){
+  return SURVIVAL_TIERS.find(t=>streak>=t.min && streak<=t.max) || SURVIVAL_TIERS[SURVIVAL_TIERS.length-1];
+}
+function survivalPoolForTier(tier){
+  const pool=[];
+  tier.chapters.forEach(cid=>{ (FRASES[cid]||[]).forEach(f=>pool.push({...f, _chapterId:cid})); });
+  return pool;
+}
+let survivalUsedKeys = new Set();
+function nextSurvivalFrase(){
+  const tier = tierForStreak(game.streak);
+  let pool = survivalPoolForTier(tier).filter(f=>!survivalUsedKeys.has(f._chapterId+"_"+f.id));
+  if(pool.length===0){
+    survivalUsedKeys.clear();
+    pool = survivalPoolForTier(tier);
+  }
+  const picked = shuffle(pool)[0];
+  survivalUsedKeys.add(picked._chapterId+"_"+picked.id);
+  return picked;
+}
+function startSurvival(){
+  game = { chapterId:"survival", phrases:[], current:0, acertos:0, erros:0, dicas:0, streak:0, pontosGanhos:0, survivalAlive:true, finalStreak:null };
+  survivalUsedKeys = new Set();
+  document.documentElement.style.setProperty("--accent-chapter", "");
+  game.phrases = [nextSurvivalFrase()];
+  showScreen("game");
+  loadPhrase();
+}
+function loadNextSurvivalFrase(){
+  game.phrases = [nextSurvivalFrase()];
+  game.current = 0;
+  loadPhrase();
+}
+function finishSurvival(){
+  const streak = game.finalStreak!=null ? game.finalStreak : game.streak;
+  const tier = tierForStreak(streak);
+  const isRecord = streak>0 && streak>=(state.survival.melhor||0);
+  state.survival.melhor = Math.max(state.survival.melhor||0, streak);
+  state.survival.ranking.push({streak, data: todayDateStr()});
+  state.survival.ranking.sort((a,b)=>b.streak-a.streak);
+  state.survival.ranking = state.survival.ranking.slice(0,10);
+  saveState();
+  checkNewBadges();
+  syncGlobalRanking();
+
+  $("survivalStreakNum").textContent = streak;
+  $("survivalMelhor").textContent = state.survival.melhor;
+  $("survivalDificuldade").textContent = tier.nome;
+  $("survivalRecap").textContent = isRecord ? "Novo recorde pessoal." :
+    streak>=15 ? "Sequência excelente. Poucos chegam tão longe." :
+    streak>=5 ? "Boa sequência. Tente superar na próxima." :
+    "Toda sequência começa pequena. Tente de novo.";
+  if(!hasProfile()){
+    $("survivalRecap").textContent += " Crie um perfil na tela inicial pra entrar no ranking da escola.";
+  }
+  renderSurvivalRanking();
+  showScreen("survival-result");
+}
+function renderSurvivalRanking(){
+  const list=$("survivalRankingList");
+  list.innerHTML="";
+  if(!state.survival.ranking.length){
+    list.innerHTML = `<p class="meta-line" style="text-align:left;">Nenhuma sequência registrada ainda.</p>`;
+    return;
+  }
+  state.survival.ranking.forEach((r,i)=>{
+    const row=document.createElement("div");
+    row.className="toc-row";
+    row.innerHTML = `<span class="num">${i+1}º</span><span class="info"><span class="label">${r.streak} acertos seguidos</span><span class="desc">${r.data}</span></span>`;
+    list.appendChild(row);
+  });
+}
+function renderSurvivalCard(){
+  const melhor = state.survival.melhor||0;
+  $("survivalCardSub").textContent = melhor>0
+    ? `Seu recorde: ${melhor} acertos seguidos. Toque para tentar de novo.`
+    : "Frases de todos os capítulos, embaralhadas. Erre uma e a sequência acaba.";
+}
+$("btnSurvivalPlay").addEventListener("click", startSurvival);
+$("btnSurvivalAgain").addEventListener("click", startSurvival);
+$("btnSurvivalBackHome").addEventListener("click", ()=>{ renderHome(); showScreen("home"); });
+$("btnSurvivalShare").addEventListener("click", ()=>{
+  const streak = game.finalStreak!=null ? game.finalStreak : (state.survival.melhor||0);
+  shareText(`Monte a Frase — Modo Sobrevivência\n${streak} acertos seguidos\nRecorde: ${state.survival.melhor||0}`);
+});
+
+/* =========================================================
    ESTADO DA FRASE ATUAL
    ========================================================= */
 let slots=[];     // array length N: bloco-index ou null
@@ -1065,6 +1386,12 @@ function updateHeader(){
     }else{
       $("clueBox").style.display="none";
     }
+  }else if(game.chapterId==="survival"){
+    const tier = tierForStreak(game.streak);
+    $("chapterTag").innerHTML = `Sobrevivência · <b>${tier.nome}</b>`;
+    $("progressFill").style.width = Math.min(100, game.streak*4)+"%";
+    $("streakNote").textContent = game.streak>0 ? `🔥 sequência: ${game.streak}` : "Uma errada encerra a sequência.";
+    $("clueBox").style.display="none";
   }else{
     const ch = CHAPTERS.find(c=>c.id===game.chapterId);
     $("chapterTag").innerHTML = `Capítulo ${CHAPTERS.findIndex(c=>c.id===game.chapterId)+1} · ${ch.nome}: <b>frase ${game.current+1} de ${game.phrases.length}</b>`;
@@ -1321,8 +1648,10 @@ function handleCorrect(frase){
   pts = Math.round(pts*mult);
   game.pontosGanhos += pts;
   state.score += pts;
-  state.solved[game.chapterId+"_"+frase.id]=true;
-  state.stats[game.chapterId].acertos++;
+  if(game.chapterId!=="survival"){
+    state.solved[game.chapterId+"_"+frase.id]=true;
+    state.stats[game.chapterId].acertos++;
+  }
   recordHistory(true);
   saveState();
   sfxAcertou();
@@ -1330,10 +1659,16 @@ function handleCorrect(frase){
 }
 function handleWrong(frase){
   game.erros++;
+  const wasStreak = game.streak;
   game.streak=0;
   const penalidade = Math.min(20, state.score);
   state.score -= penalidade;
-  state.stats[game.chapterId].erros++;
+  if(game.chapterId!=="survival"){
+    state.stats[game.chapterId].erros++;
+  }else{
+    game.survivalAlive = false;
+    game.finalStreak = wasStreak;
+  }
   recordHistory(false);
   saveState();
   sfxErrou();
@@ -1399,6 +1734,10 @@ function showCorrection(correct, pts, frase, mult){
 $("btnContinue").addEventListener("click", ()=>{
   $("correction").classList.remove("show");
   $("btnVerify").disabled = false;
+  if(game.chapterId==="survival"){
+    if(game.survivalAlive) loadNextSurvivalFrase(); else finishSurvival();
+    return;
+  }
   if(game.current < game.phrases.length-1){
     game.current++;
     loadPhrase();
@@ -1420,6 +1759,7 @@ $("btnClear").addEventListener("click", ()=>{
    ========================================================= */
 function finishChapter(){
   if(game.chapterId==="daily"){ finishDaily(); return; }
+  if(game.chapterId==="survival"){ finishSurvival(); return; }
   const total = game.acertos+game.erros;
   const pct = total ? Math.round(game.acertos/total*100) : 0;
   const idx = ORDER.indexOf(game.chapterId);
@@ -1713,31 +2053,48 @@ $("btnScoreShare").addEventListener("click", ()=>{
 const bgMusic = document.getElementById("bgMusic");
 let musicPlaying = false;
 let audioCtx=null, masterGain=null; // usados só pelos efeitos sonoros (clique/acerto/erro) abaixo
-let musicCtx=null, musicGainNode=null, musicSource=null, musicCompressor=null; // usados pra deixar a música mais alta
-const MUSIC_BOOST = 2; // ganho geral aplicado em todos os níveis de volume; ajuste pra mais ou menos
 
-function ensureMusicGraph(){
-  if(musicSource) return;
-  musicCtx = new (window.AudioContext||window.webkitAudioContext)();
-  musicSource = musicCtx.createMediaElementSource(bgMusic);
-  musicGainNode = musicCtx.createGain();
-  musicCompressor = musicCtx.createDynamicsCompressor();
-  // segura o pico pra não distorcer quando o ganho é alto
-  musicCompressor.threshold.value = -24;
-  musicCompressor.knee.value = 20;
-  musicCompressor.ratio.value = 12;
-  musicCompressor.attack.value = 0.003;
-  musicCompressor.release.value = 0.25;
-  musicSource.connect(musicGainNode).connect(musicCompressor).connect(musicCtx.destination);
+// Três variações do mesmo tema (tom e filtro diferentes), tocadas em ordem
+// embaralhada e sem repetir a mesma duas vezes seguidas — só pra a faixa
+// não cansar tão rápido, já que é sempre a mesma música de base.
+const MUSIC_TRACKS = ["musica.mp3","musica-b.mp3","musica-c.mp3"];
+let musicOrder = shuffle(MUSIC_TRACKS.map((_,i)=>i));
+let musicIdx = 0;
+const MUSIC_FADE_SEC = 1.5;
+function currentTrackSrc(){ return MUSIC_TRACKS[musicOrder[musicIdx]]; }
+function advanceTrack(){
+  musicIdx++;
+  if(musicIdx>=musicOrder.length){
+    let novaOrdem;
+    do{ novaOrdem = shuffle(MUSIC_TRACKS.map((_,i)=>i)); }while(novaOrdem[0]===musicOrder[musicOrder.length-1] && MUSIC_TRACKS.length>1);
+    musicOrder = novaOrdem;
+    musicIdx = 0;
+  }
 }
+bgMusic.addEventListener("ended", ()=>{
+  advanceTrack();
+  bgMusic.src = currentTrackSrc();
+  if(musicPlaying) bgMusic.play().catch(()=>{});
+});
+bgMusic.addEventListener("timeupdate", ()=>{
+  if(!musicPlaying || !bgMusic.duration) return;
+  const base = state.musicVolume!=null ? state.musicVolume : 0.8;
+  const remain = bgMusic.duration - bgMusic.currentTime;
+  if(remain < MUSIC_FADE_SEC){
+    bgMusic.volume = Math.max(0, Math.min(1, base * (remain/MUSIC_FADE_SEC)));
+  }else if(bgMusic.currentTime < MUSIC_FADE_SEC){
+    bgMusic.volume = Math.max(0, Math.min(1, base * (bgMusic.currentTime/MUSIC_FADE_SEC)));
+  }else{
+    bgMusic.volume = Math.max(0, Math.min(1, base));
+  }
+});
 function applyMusicVolume(){
-  ensureMusicGraph();
-  if(musicCtx.state==="suspended") musicCtx.resume();
   const vol = state.musicVolume!=null ? state.musicVolume : 0.8;
-  musicGainNode.gain.value = Math.max(0, vol) * MUSIC_BOOST;
+  bgMusic.volume = Math.max(0, Math.min(1, vol));
 }
 function startMusic(){
   applyMusicVolume();
+  if(!bgMusic.src || bgMusic.src.indexOf(currentTrackSrc())===-1) bgMusic.src = currentTrackSrc();
   bgMusic.play().then(()=>{
     musicPlaying = true;
     syncSoundButton();
