@@ -960,7 +960,15 @@ function loadState(){
   }catch(e){}
   return defaultState();
 }
-function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
+  }catch(e){
+    console.error("Falha ao salvar em localStorage:", e);
+    return false;
+  }
+}
 
 let state = loadState();
 
@@ -1025,12 +1033,12 @@ const $ = id => document.getElementById(id);
    }
    ========================================================= */
 const FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyCqRtByXOgfnYknAkj8ms_q7mE4VUqeItY",
+  authDomain: "monte-a-frase.firebaseapp.com",
+  projectId: "monte-a-frase",
+  storageBucket: "monte-a-frase.firebasestorage.app",
+  messagingSenderId: "293801173449",
+  appId: "1:293801173449:web:169ea70fcf9bd5da1b0818",
 };
 let db = null;
 if(FIREBASE_CONFIG.apiKey && window.firebase){
@@ -1073,7 +1081,17 @@ $("btnProfileSave").addEventListener("click", ()=>{
   state.profile.nome = nome;
   state.profile.turma = turma;
   uid();
-  saveState();
+  const ok = saveState();
+  // Confere lendo de volta do localStorage, pra não fingir que salvou se o navegador bloqueou.
+  let confirmado = false;
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    confirmado = !!(raw && JSON.parse(raw).profile && JSON.parse(raw).profile.nome === nome);
+  }catch(e){ confirmado = false; }
+  if(!ok || !confirmado){
+    toast("Não deu pra salvar o perfil neste navegador (armazenamento local bloqueado).");
+    return;
+  }
   renderProfileBar();
   $("profileBackdrop").classList.remove("show");
   toast("Perfil salvo.");
@@ -1402,9 +1420,9 @@ function updateHeader(){
     }
   }else if(game.chapterId==="survival"){
     const tier = tierForStreak(game.streak);
-    $("chapterTag").innerHTML = `Sobrevivência · <b>${tier.nome}</b>`;
+    $("chapterTag").innerHTML = `Sobrevivência · <b>${tier.nome}</b> · recorde: ${state.survival.melhor||0}`;
     $("progressFill").style.width = Math.min(100, game.streak*4)+"%";
-    $("streakNote").textContent = game.streak>0 ? `Sequência: ${game.streak}` : "Uma errada encerra a sequência.";
+    $("streakNote").textContent = game.streak>0 ? `Sequência atual: ${game.streak}` : "Uma errada encerra a sequência atual (seu recorde fica salvo).";
     $("clueBox").style.display="none";
   }else{
     const ch = CHAPTERS.find(c=>c.id===game.chapterId);
