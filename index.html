@@ -27,7 +27,10 @@
     --accent-2:#c98a7d;
     --good:#8fb99a;
     --bad:#cf9484;
-    --radius:16px;
+    --radius:14px;
+    --radius-sm:11px;
+    --radius-lg:22px;
+    --gold:#e3c168;
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --font-display:"Fraunces","Georgia","Times New Roman",serif;
   }
@@ -55,7 +58,7 @@
     padding:10px 14px; gap:8px;
   }
   .wordmark{
-    font-family:var(--font-display); font-size:1.55rem; font-weight:700; letter-spacing:.01em;
+    font-family:var(--font-display); font-size:1.55rem; font-weight:700; letter-spacing:-.01em;
     margin:0; text-align:center; flex:1; color:var(--text);
     white-space:nowrap;
   }
@@ -88,21 +91,21 @@
   }
   .profile-bar{
     display:flex; align-items:center; justify-content:space-between; gap:10px;
-    background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius);
-    padding:10px 14px; margin-bottom:18px; font-size:.85rem; color:var(--text);
+    border-bottom:1px solid var(--border);
+    padding:0 0 14px; margin-bottom:20px; font-size:.83rem; color:var(--text-soft);
   }
-  #profileBarText{font-weight:700;}
+  #profileBarText{font-weight:600; color:var(--text);}
 
   /* ============ SUMÁRIO DE CAPÍTULOS ============ */
-  .toc{display:flex; flex-direction:column; gap:10px; margin-bottom:22px;}
+  .toc{display:flex; flex-direction:column; gap:9px; margin-bottom:22px;}
   .toc-row{
     background:var(--bg-elevated);
-    border:2px solid var(--border); border-radius:var(--radius);
+    border:1.5px solid var(--border); border-radius:var(--radius-sm);
     padding:13px 14px; display:flex; align-items:center; gap:12px;
     cursor:pointer; width:100%; text-align:left;
-    transition:border-color .12s, background .12s;
+    transition:border-color .12s, background .12s, transform .12s;
   }
-  .toc-row:hover:not(.locked){border-color:var(--border-strong);}
+  .toc-row:hover:not(.locked){border-color:var(--border-strong); transform:translateY(-1px);}
   .toc-row.selected{border-color:var(--accent); background:var(--bg-elevated-2);}
   .toc-row.locked{opacity:.45; cursor:not-allowed;}
   .toc-row .num{font-weight:800; color:var(--text-soft); font-size:.85rem; width:18px; flex-shrink:0;}
@@ -135,19 +138,29 @@
   /* ============ DESAFIO DO DIA ============ */
   .daily-card{
     position:relative; overflow:hidden;
-    background:var(--bg-elevated);
-    border:2px solid var(--accent); border-radius:var(--radius);
-    padding:15px; display:flex; align-items:center; gap:12px; justify-content:space-between;
+    background:
+      linear-gradient(155deg, rgba(215,163,115,.12), transparent 55%),
+      var(--bg-elevated);
+    border:1.5px solid var(--accent); border-radius:var(--radius-lg);
+    padding:18px 18px 18px 20px; display:flex; align-items:center; gap:14px; justify-content:space-between;
   }
   .daily-card::before{
-    content:"\201C"; position:absolute; left:-6px; top:-22px;
-    font-family:var(--font-display); font-size:5rem; font-weight:700;
-    color:var(--accent); opacity:.16; line-height:1; pointer-events:none;
+    content:"\201C"; position:absolute; left:-4px; top:-26px;
+    font-family:var(--font-display); font-size:5.5rem; font-weight:700;
+    color:var(--accent); opacity:.14; line-height:1; pointer-events:none;
   }
-  .daily-card-text{display:flex; flex-direction:column; gap:2px; min-width:0; position:relative;}
-  .daily-card-title{font-family:var(--font-display); font-weight:700; font-size:1.05rem; color:var(--text);}
-  .daily-card-sub{font-size:.78rem; color:var(--text-soft);}
+  .daily-card-text{display:flex; flex-direction:column; gap:3px; min-width:0; position:relative;}
+  .daily-card-title{font-family:var(--font-display); font-weight:700; font-size:1.08rem; color:var(--text);}
+  .daily-card-sub{font-size:.79rem; color:var(--text-soft); line-height:1.4;}
   .daily-card .btn-outline{flex-shrink:0;}
+
+  .survival-card{
+    position:relative; margin-top:12px;
+    background:var(--bg-elevated);
+    border:1.5px solid var(--border-strong); border-radius:var(--radius-lg);
+    padding:18px 18px 18px 20px; display:flex; align-items:center; gap:14px; justify-content:space-between;
+  }
+  .survival-card .daily-card-title{color:var(--text);}
 
   /* ============ JOGO ============ */
   .chapter-tag{
@@ -240,7 +253,7 @@
   .grade{font-family:var(--font-display); font-size:3rem; font-weight:700; text-align:center; margin:4px 0 2px; color:var(--accent);}
   .grade-caption{text-align:center; font-size:.82rem; color:var(--text-soft); margin-bottom:22px;}
   .stat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px;}
-  .stat-box{text-align:center; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius); padding:11px 4px;}
+  .stat-box{text-align:center; background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:11px 4px;}
   .stat-num{display:block; font-family:var(--font-display); font-size:1.5rem; font-weight:700; color:var(--text);}
   .stat-lbl{display:block; font-size:.62rem; color:var(--text-soft); text-transform:uppercase; letter-spacing:.02em; margin-top:2px;}
   .teacher-remark{font-size:.92rem; text-align:center; margin-bottom:22px; color:var(--text);}
@@ -269,8 +282,8 @@
   }
   .help-backdrop.show{display:flex;}
   .help-card{
-    background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px;
-    max-width:420px; width:100%; padding:22px; max-height:80vh; overflow:auto;
+    background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-lg);
+    max-width:420px; width:100%; padding:24px; max-height:80vh; overflow:auto;
   }
   .help-card h2{font-family:var(--font-display); font-size:1.2rem; margin:0 0 14px; color:var(--text); font-weight:700;}
   .help-card ul{margin:0 0 18px; padding-left:20px; font-size:.88rem; line-height:1.65; color:var(--text);}
@@ -283,13 +296,14 @@
   .score-modal-list{display:flex; flex-direction:column; gap:8px;}
   .score-modal-row{
     display:flex; align-items:center; gap:10px; background:var(--bg);
-    border-radius:var(--radius); padding:9px 12px;
+    border-radius:var(--radius-sm); padding:9px 12px;
   }
   .score-modal-row .diff-dot{margin-right:0;}
   .score-modal-row .name{flex:1; font-size:.88rem; font-weight:700; color:var(--text);}
   .score-modal-row .pct{font-size:.82rem; color:var(--text-soft); font-weight:700;}
-  .ranking-row{display:flex; align-items:center; gap:10px; background:var(--bg); border-radius:var(--radius); padding:9px 12px;}
+  .ranking-row{display:flex; align-items:center; gap:10px; background:var(--bg); border-radius:var(--radius-sm); padding:9px 12px;}
   .ranking-row.me{border:1.5px solid var(--accent);}
+  .ranking-row:first-child .pos, .ranking-row:first-child .streak{color:var(--gold);}
   .ranking-row .pos{font-weight:800; color:var(--text-soft); font-size:.85rem; width:26px; flex-shrink:0;}
   .ranking-row .info{flex:1; min-width:0;}
   .ranking-row .nome{font-size:.9rem; font-weight:700; color:var(--text); display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -395,7 +409,7 @@
       <button class="btn-outline" id="btnDailyPlay">Jogar</button>
     </div>
 
-    <div class="daily-card" id="survivalCard" style="margin-top:12px; border-color:var(--border-strong);">
+    <div class="survival-card" id="survivalCard">
       <div class="daily-card-text">
         <span class="daily-card-title">Modo Sobrevivência</span>
         <span class="daily-card-sub" id="survivalCardSub">Frases de todos os capítulos, embaralhadas. Erre uma e a sequência acaba.</span>
@@ -1378,7 +1392,7 @@ function updateHeader(){
     const frase = currentFrase();
     $("chapterTag").innerHTML = `Desafio do dia · <b>${frase.tipo}</b>`;
     $("progressFill").style.width = "0%";
-    $("streakNote").textContent = state.daily.streak>0 ? `🌿 sequência atual: ${state.daily.streak} dia(s)` : "";
+    $("streakNote").textContent = state.daily.streak>0 ? `Sequência atual: ${state.daily.streak} dia(s)` : "";
     if(frase.dica){
       $("clueBox").style.display="block";
       $("clueLabel").textContent = "Pista";
@@ -1390,13 +1404,13 @@ function updateHeader(){
     const tier = tierForStreak(game.streak);
     $("chapterTag").innerHTML = `Sobrevivência · <b>${tier.nome}</b>`;
     $("progressFill").style.width = Math.min(100, game.streak*4)+"%";
-    $("streakNote").textContent = game.streak>0 ? `🔥 sequência: ${game.streak}` : "Uma errada encerra a sequência.";
+    $("streakNote").textContent = game.streak>0 ? `Sequência: ${game.streak}` : "Uma errada encerra a sequência.";
     $("clueBox").style.display="none";
   }else{
     const ch = CHAPTERS.find(c=>c.id===game.chapterId);
     $("chapterTag").innerHTML = `Capítulo ${CHAPTERS.findIndex(c=>c.id===game.chapterId)+1} · ${ch.nome}: <b>frase ${game.current+1} de ${game.phrases.length}</b>`;
     $("progressFill").style.width = (game.current/game.phrases.length*100)+"%";
-    $("streakNote").textContent = game.streak>=2 ? `🌿 sequência de ${game.streak} acertos` : "";
+    $("streakNote").textContent = game.streak>=2 ? `Sequência de ${game.streak} acertos` : "";
     if(game.current===0 && ch.regra){
       $("clueLabel").textContent = "Pista";
       $("clueText").textContent = ch.regra;
@@ -1841,7 +1855,7 @@ function renderDailyCard(){
     $("btnDailyPlay").textContent = "Ver resultado";
   }else{
     $("dailyCardSub").textContent = state.daily.streak>0
-      ? `🌿 sequência atual de ${state.daily.streak} dia(s).`
+      ? `Sequência atual de ${state.daily.streak} dia(s).`
       : `Um provérbio ou mini-poema novo a cada dia. Só uma tentativa por dia.`;
     $("btnDailyPlay").textContent = "Jogar";
   }
