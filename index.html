@@ -811,7 +811,6 @@
   </div>
 </div>
 
-<audio id="bgMusic" preload="auto" src="musica.mp3"></audio>
 
 <script>
 (function(){
@@ -1440,6 +1439,7 @@ $("sideBtnRanking").addEventListener("click", ()=> $("btnShowRanking").click());
 $("sideBtnProfile").addEventListener("click", ()=> openProfileModal());
 
 function renderHome(){
+  setMusicProfile("idle");
   paintMascots();
   setMascotMood("gameMascot","neutral");
   $("sidebarGreeting").textContent = hasProfile() ? `Olá, ${state.profile.nome}!` : "Olá!";
@@ -1525,6 +1525,7 @@ function getPhrasesForChapter(id){
 
 function startChapter(id){
   stopTimeAttackTimer();
+  setMusicProfile("daily");
   game = {
     chapterId:id,
     phrases:getPhrasesForChapter(id),
@@ -1573,6 +1574,7 @@ function nextSurvivalFrase(){
 }
 function startSurvival(){
   stopTimeAttackTimer();
+  setMusicProfile("survival0");
   game = { chapterId:"survival", phrases:[], current:0, acertos:0, erros:0, dicas:0, streak:0, pontosGanhos:0, survivalAlive:true, finalStreak:null };
   survivalUsedKeys = new Set();
   document.documentElement.style.setProperty("--accent-chapter", "");
@@ -1586,6 +1588,7 @@ function loadNextSurvivalFrase(){
   loadPhrase();
 }
 function finishSurvival(){
+  setMusicProfile("idle");
   const streak = game.finalStreak!=null ? game.finalStreak : game.streak;
   const tier = tierForStreak(streak);
   const isRecord = streak>0 && streak>=(state.survival.melhor||0);
@@ -1685,6 +1688,7 @@ function stopTimeAttackTimer(){
 }
 function startTimeAttack(){
   stopTimeAttackTimer();
+  setMusicProfile("timeattack");
   game = { chapterId:"timeattack", phrases:[], current:0, acertos:0, erros:0, streak:0, timeLeft:TIME_ATTACK_SECONDS };
   taUsedKeys = new Set();
   game.phrases = [nextTaFrase()];
@@ -1729,6 +1733,7 @@ function taTituloPara(acertos){
   return t;
 }
 function finishTimeAttack(){
+  setMusicProfile("idle");
   const acertos = game.acertos;
   const total = game.acertos+game.erros;
   const precisao = total>0 ? Math.round((acertos/total)*100) : 0;
@@ -1826,6 +1831,8 @@ function updateHeader(){
     }
   }else if(game.chapterId==="survival"){
     const tier = tierForStreak(game.streak);
+    const tierIdx = SURVIVAL_TIERS.indexOf(tier);
+    setMusicProfile(SURVIVAL_MUSIC_BY_TIER[tierIdx] || "survival0");
     $("chapterTag").innerHTML = `Sobrevivência · <b>${tier.nome}</b> · recorde: ${state.survival.melhor||0}`;
     $("progressFill").style.width = Math.min(100, game.streak*4)+"%";
     $("streakNote").textContent = game.streak>0 ? `Sequência atual: ${game.streak}` : "Uma errada encerra a sequência atual (seu recorde fica salvo).";
@@ -2248,6 +2255,7 @@ $("btnClear").addEventListener("click", ()=>{
 function finishChapter(){
   if(game.chapterId==="daily"){ finishDaily(); return; }
   if(game.chapterId==="survival"){ finishSurvival(); return; }
+  setMusicProfile("idle");
   const total = game.acertos+game.erros;
   const pct = total ? Math.round(game.acertos/total*100) : 0;
   const idx = ORDER.indexOf(game.chapterId);
@@ -2292,6 +2300,7 @@ function startDaily(){
 }
 
 function finishDaily(){
+  setMusicProfile("idle");
   const today = todayDateStr();
   const yesterday = yesterdayDateStr();
   if(state.daily.lastSolvedDate===yesterday){
@@ -2536,71 +2545,169 @@ $("btnScoreShare").addEventListener("click", ()=>{
 });
 
 /* =========================================================
-   MÚSICA DE FUNDO
-   Toca o arquivo de áudio embutido no elemento <audio id="bgMusic">.
+   MÚSICA DE FUNDO — 100% procedural, gerada na hora (chiptune)
+   Nada de arquivo de música: cada nota é sintetizada pelo Web
+   Audio, então a melodia sai diferente a cada vez que toca (um
+   "passeio aleatório" dentro de uma escala musical), e a
+   intensidade muda de verdade por modo:
+   - Desafio do dia / prática livre: calma, esparsa, sem bateria.
+   - Sobrevivência: começa calma e vai ficando mais rápida e
+     mais densa conforme a sequência atual sobe (5 níveis, os
+     mesmos do SURVIVAL_TIERS).
+   - Contra o Relógio: frenética do primeiro segundo ao último.
    ========================================================= */
-const bgMusic = document.getElementById("bgMusic");
 let musicPlaying = false;
-let audioCtx=null, masterGain=null; // usados só pelos efeitos sonoros (clique/acerto/erro) abaixo
+let audioCtx=null, masterGain=null; // compartilhado com os efeitos sonoros (clique/acerto/erro) logo abaixo
+let musicTimerID = null;
+let musicNextNoteTime = 0;
+let musicStep = 0;
+let melodyWalk = 0;
+let musicNoiseBuffer = null;
+let musicProfile = null;
 
-// Três variações do mesmo tema (tom e filtro diferentes), tocadas em ordem
-// embaralhada e sem repetir a mesma duas vezes seguidas — só pra a faixa
-// não cansar tão rápido, já que é sempre a mesma música de base.
-const MUSIC_TRACKS = ["musica.mp3","musica-b.mp3","musica-c.mp3"];
-let musicOrder = shuffle(MUSIC_TRACKS.map((_,i)=>i));
-let musicIdx = 0;
-const MUSIC_FADE_SEC = 1.5;
-function currentTrackSrc(){ return MUSIC_TRACKS[musicOrder[musicIdx]]; }
-function advanceTrack(){
-  musicIdx++;
-  if(musicIdx>=musicOrder.length){
-    let novaOrdem;
-    do{ novaOrdem = shuffle(MUSIC_TRACKS.map((_,i)=>i)); }while(novaOrdem[0]===musicOrder[musicOrder.length-1] && MUSIC_TRACKS.length>1);
-    musicOrder = novaOrdem;
-    musicIdx = 0;
+function noteFreq(semitonesFromA4){ return 440 * Math.pow(2, semitonesFromA4/12); }
+const SCALE_MAJOR_PENTA = [0,2,4,7,9];
+const SCALE_MINOR_PENTA = [0,3,5,7,10];
+const SCALE_MINOR       = [0,2,3,5,7,8,10];
+
+const MUSIC_PROFILES = {
+  idle:      {bpm:80,  scale:SCALE_MAJOR_PENTA, octave:0, density:0.55, bass:false, perc:false, extraPerc:false, wave:"triangle", gain:0.9},
+  daily:     {bpm:88,  scale:SCALE_MAJOR_PENTA, octave:0, density:0.7,  bass:false, perc:false, extraPerc:false, wave:"triangle", gain:0.95},
+  survival0: {bpm:100, scale:SCALE_MINOR_PENTA, octave:0, density:0.72, bass:true,  perc:false, extraPerc:false, wave:"square",   gain:0.75},
+  survival1: {bpm:116, scale:SCALE_MINOR_PENTA, octave:0, density:0.8,  bass:true,  perc:true,  extraPerc:false, wave:"square",   gain:0.6},
+  survival2: {bpm:132, scale:SCALE_MINOR,       octave:0, density:0.88, bass:true,  perc:true,  extraPerc:false, wave:"square",   gain:0.55},
+  survival3: {bpm:150, scale:SCALE_MINOR,       octave:1, density:0.94, bass:true,  perc:true,  extraPerc:true,  wave:"square",   gain:0.48},
+  survival4: {bpm:170, scale:SCALE_MINOR,       octave:1, density:1,    bass:true,  perc:true,  extraPerc:true,  wave:"square",   gain:0.45},
+  timeattack:{bpm:168, scale:SCALE_MINOR,       octave:1, density:0.95, bass:true, perc:true,  extraPerc:true,  wave:"square",   gain:0.45},
+};
+const SURVIVAL_MUSIC_BY_TIER = ["survival0","survival1","survival2","survival3","survival4"];
+
+function ensureCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(!masterGain){
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = state.musicVolume!=null ? state.musicVolume : 0.8;
+    masterGain.connect(audioCtx.destination);
   }
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  return audioCtx;
 }
-bgMusic.addEventListener("ended", ()=>{
-  advanceTrack();
-  bgMusic.src = currentTrackSrc();
-  if(musicPlaying) bgMusic.play().catch(()=>{});
-});
-bgMusic.addEventListener("timeupdate", ()=>{
-  if(!musicPlaying || !bgMusic.duration) return;
-  const base = state.musicVolume!=null ? state.musicVolume : 0.8;
-  const remain = bgMusic.duration - bgMusic.currentTime;
-  if(remain < MUSIC_FADE_SEC){
-    bgMusic.volume = Math.max(0, Math.min(1, base * (remain/MUSIC_FADE_SEC)));
-  }else if(bgMusic.currentTime < MUSIC_FADE_SEC){
-    bgMusic.volume = Math.max(0, Math.min(1, base * (bgMusic.currentTime/MUSIC_FADE_SEC)));
-  }else{
-    bgMusic.volume = Math.max(0, Math.min(1, base));
+function getNoiseBuffer(){
+  if(musicNoiseBuffer) return musicNoiseBuffer;
+  const ctx = ensureCtx();
+  const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate*0.3), ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<data.length;i++) data[i] = Math.random()*2-1;
+  musicNoiseBuffer = buf;
+  return buf;
+}
+function playMusicNote(freq, time, dur, type, vol){
+  const ctx = ensureCtx();
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, time);
+  g.gain.setValueAtTime(0, time);
+  g.gain.linearRampToValueAtTime(vol, time+0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, time+dur);
+  osc.connect(g); g.connect(masterGain);
+  osc.start(time); osc.stop(time+dur+0.02);
+}
+function playMusicKick(time, mul){
+  const ctx = ensureCtx();
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(140, time);
+  osc.frequency.exponentialRampToValueAtTime(46, time+0.1);
+  g.gain.setValueAtTime(0.3*mul, time);
+  g.gain.exponentialRampToValueAtTime(0.0001, time+0.15);
+  osc.connect(g); g.connect(masterGain);
+  osc.start(time); osc.stop(time+0.16);
+}
+function playMusicSnare(time, mul){
+  const ctx = ensureCtx();
+  const src = ctx.createBufferSource();
+  src.buffer = getNoiseBuffer();
+  const filt = ctx.createBiquadFilter();
+  filt.type = "highpass"; filt.frequency.value = 1200;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.18*mul, time);
+  g.gain.exponentialRampToValueAtTime(0.0001, time+0.11);
+  src.connect(filt); filt.connect(g); g.connect(masterGain);
+  src.start(time); src.stop(time+0.12);
+}
+function playMusicHat(time, mul){
+  const ctx = ensureCtx();
+  const src = ctx.createBufferSource();
+  src.buffer = getNoiseBuffer();
+  const filt = ctx.createBiquadFilter();
+  filt.type = "highpass"; filt.frequency.value = 6500;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.09*mul, time);
+  g.gain.exponentialRampToValueAtTime(0.0001, time+0.04);
+  src.connect(filt); filt.connect(g); g.connect(masterGain);
+  src.start(time); src.stop(time+0.05);
+}
+function scheduleMusicStep(time){
+  const p = musicProfile;
+  const stepInBar = musicStep % 16;
+
+  if(Math.random() < p.density){
+    melodyWalk += (Math.random()<0.5 ? -1 : 1) * (Math.random()<0.18 ? 2 : 1);
+    melodyWalk = Math.max(-5, Math.min(7, melodyWalk));
+    const len = p.scale.length;
+    const deg = p.scale[((melodyWalk%len)+len)%len];
+    const octaveShift = Math.floor(melodyWalk/len) + p.octave;
+    const semis = deg + octaveShift*12;
+    const stepDurSec = (60/p.bpm)/4;
+    playMusicNote(noteFreq(semis), time, stepDurSec*1.7, p.wave, 0.14*p.gain);
   }
-});
-function applyMusicVolume(){
-  const vol = state.musicVolume!=null ? state.musicVolume : 0.8;
-  bgMusic.volume = Math.max(0, Math.min(1, vol));
+  if(p.bass && (stepInBar===0 || stepInBar===8)){
+    const rootSemis = p.scale[0] + (p.octave-1)*12;
+    const stepDurSec = (60/p.bpm)/4;
+    playMusicNote(noteFreq(rootSemis), time, stepDurSec*3.6, "triangle", 0.22*p.gain);
+  }
+  if(p.perc){
+    if(stepInBar===0 || stepInBar===8) playMusicKick(time, p.gain);
+    if(stepInBar===4 || stepInBar===12) playMusicSnare(time, p.gain);
+  }
+  if(p.extraPerc && stepInBar%2===0) playMusicHat(time, p.gain*0.55);
+
+  musicStep++;
+}
+function musicSchedulerLoop(){
+  const ctx = ensureCtx();
+  while(musicNextNoteTime < ctx.currentTime + 0.12){
+    scheduleMusicStep(musicNextNoteTime);
+    musicNextNoteTime += (60/musicProfile.bpm)/4;
+  }
+  musicTimerID = setTimeout(musicSchedulerLoop, 25);
+}
+function setMusicProfile(name){
+  musicProfile = MUSIC_PROFILES[name] || MUSIC_PROFILES.idle;
 }
 function startMusic(){
-  applyMusicVolume();
-  if(!bgMusic.src || bgMusic.src.indexOf(currentTrackSrc())===-1) bgMusic.src = currentTrackSrc();
-  bgMusic.play().then(()=>{
-    musicPlaying = true;
-    syncSoundButton();
-  }).catch(()=>{
-    // o navegador pode bloquear até haver uma interação do usuário;
-    // a função armAutoStartMusic tenta de novo no primeiro toque/clique.
-  });
+  if(!musicProfile) musicProfile = MUSIC_PROFILES.idle;
+  const ctx = ensureCtx();
+  masterGain.gain.setTargetAtTime(state.musicVolume!=null?state.musicVolume:0.8, ctx.currentTime, 0.08);
+  if(musicPlaying) return;
+  musicPlaying = true;
+  musicStep = 0;
+  melodyWalk = Math.floor(Math.random()*7)-3; // ponto de partida diferente a cada vez
+  musicNextNoteTime = ctx.currentTime + 0.05;
+  musicSchedulerLoop();
+  syncSoundButton();
 }
 function stopMusic(){
-  bgMusic.pause();
   musicPlaying = false;
+  if(musicTimerID){ clearTimeout(musicTimerID); musicTimerID=null; }
   syncSoundButton();
 }
 function setMusicVolume(v){
   state.musicVolume = Math.max(0, Math.min(1, Math.round(v*100)/100));
   saveState();
-  applyMusicVolume();
+  if(masterGain) masterGain.gain.setTargetAtTime(state.musicVolume, ensureCtx().currentTime, 0.05);
   syncSoundButton();
 }
 function syncSoundButton(){
@@ -2632,7 +2739,10 @@ function armAutoStartMusic(){
     // não inicia a música automaticamente se o clique foi no botão de som
     // dentro das preferências: nesse caso, quem decide é o usuário.
     const insideHelp = e.target && e.target.closest && e.target.closest("#helpBackdrop");
-    if(state.soundOn!==false && !insideHelp) startMusic();
+    if(state.soundOn!==false && !insideHelp){
+      if(!musicProfile) setMusicProfile("idle");
+      startMusic();
+    }
     document.removeEventListener("pointerdown", tryStart, true);
     document.removeEventListener("keydown", tryStart, true);
   };
@@ -2640,22 +2750,6 @@ function armAutoStartMusic(){
   document.addEventListener("keydown", tryStart, true);
 }
 
-/* =========================================================
-   EFEITOS SONOROS 8-BIT (acertou / errou)
-   Sons curtos de videogame clássico, gerados na hora.
-   Cada um toca pelo canal masterGain, então é possível ouvir
-   mesmo com a música de fundo pausada.
-   ========================================================= */
-function ensureCtx(){
-  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-  if(!masterGain){
-    masterGain = audioCtx.createGain();
-    masterGain.gain.value = state.musicVolume!=null ? state.musicVolume : 0.8;
-    masterGain.connect(audioCtx.destination);
-  }
-  if(audioCtx.state==="suspended") audioCtx.resume();
-  return audioCtx;
-}
 function sfxNote(freq, dur, when, type, vol){
   const ctx = ensureCtx();
   const t0 = ctx.currentTime + when;
