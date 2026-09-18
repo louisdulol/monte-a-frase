@@ -9,8 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&display=swap" rel="stylesheet">
-<!-- Firebase (ranking global entre jogadores) — só é usado se FIREBASE_CONFIG, lá embaixo no script, for preenchido -->
+<!-- Firebase (login por e-mail/senha + progresso e ranking entre jogadores) — só é usado se FIREBASE_CONFIG, lá embaixo no script, for preenchido -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
@@ -786,16 +787,43 @@
 <div class="help-backdrop" id="profileBackdrop">
   <div class="help-card">
     <button class="icon-btn score-modal-close" id="btnProfileClose" aria-label="Fechar">✕</button>
-    <h2>Seu perfil</h2>
-    <div class="profile-field">
-      <label for="profileNome">Nome (aparece no ranking)</label>
-      <input type="text" id="profileNome" maxlength="18" placeholder="Ex: Maria S.">
+
+    <div id="accountLoggedOut">
+      <h2>Entrar ou criar conta</h2>
+      <p class="meta-line" style="text-align:left; margin:0 0 16px;">Crie uma conta pra sincronizar pontos, fases e ranking entre o computador e o celular. Sem conta, dá pra jogar numa boa, mas o progresso fica salvo só neste aparelho.</p>
+      <div class="profile-field">
+        <label for="authEmail">E-mail</label>
+        <input type="email" id="authEmail" autocomplete="email" placeholder="seu@email.com">
+      </div>
+      <div class="profile-field">
+        <label for="authSenha">Senha</label>
+        <input type="password" id="authSenha" autocomplete="current-password" placeholder="mínimo 6 caracteres">
+      </div>
+      <p class="meta-line" id="authError" style="text-align:left; color:var(--bad); display:none; margin:-6px 0 14px;"></p>
+      <button class="btn-primary" id="btnAuthEntrar">Entrar</button>
+      <button class="btn-outline" id="btnAuthCriar" style="width:100%; margin-top:10px;">Criar conta nova</button>
+      <div style="text-align:center; margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+        <button class="link-btn" id="btnAuthEsqueci">Esqueci minha senha</button>
+        <button class="link-btn" id="btnAuthGuest">Continuar sem conta</button>
+      </div>
     </div>
-    <div class="profile-field">
-      <label for="profileTurma">Turma (opcional)</label>
-      <input type="text" id="profileTurma" maxlength="12" placeholder="Ex: 9ºA">
+
+    <div id="accountLoggedIn" style="display:none;">
+      <h2>Sua conta</h2>
+      <p class="meta-line" id="accountEmailLabel" style="text-align:left; margin:0 0 16px;"></p>
+      <div class="profile-field">
+        <label for="profileNome">Nome (aparece no ranking)</label>
+        <input type="text" id="profileNome" maxlength="18" placeholder="Ex: Maria S.">
+      </div>
+      <div class="profile-field">
+        <label for="profileTurma">Turma (opcional)</label>
+        <input type="text" id="profileTurma" maxlength="12" placeholder="Ex: 9ºA">
+      </div>
+      <button class="btn-primary" id="btnProfileSave">Salvar</button>
+      <div style="text-align:center; margin-top:14px;">
+        <button class="link-btn" id="btnAuthSair">Sair da conta</button>
+      </div>
     </div>
-    <button class="btn-primary" id="btnProfileSave">Salvar</button>
   </div>
 </div>
 
@@ -1194,26 +1222,24 @@ function buildDailyFrase(txt){
 const $ = id => document.getElementById(id);
 
 /* =========================================================
-   RANKING GLOBAL (Firebase Firestore)
-   Pra funcionar no GitHub Pages, crie um projeto grátis em
-   https://console.firebase.google.com, ative o Firestore e
-   cole as chaves do seu projeto aqui embaixo. Sem isso, o jogo
-   funciona normalmente, só sem ranking entre jogadores.
+   CONTA (Firebase Authentication) + PROGRESSO NA NUVEM (Firestore)
+   Pra funcionar, crie um projeto grátis em
+   https://console.firebase.google.com, ative Authentication
+   (método Email/Password) e o Firestore, e cole as chaves do
+   seu projeto aqui embaixo. Sem isso, o jogo funciona
+   normalmente, só sem conta/sincronia/ranking entre jogadores —
+   tudo fica salvo apenas neste aparelho (modo convidado).
 
-   Regras sugeridas no Firestore (aba "Regras"):
+   Regras do Firestore (aba "Rules"):
    rules_version = '2';
    service cloud.firestore {
      match /databases/{database}/documents {
        match /jogadores/{uid} {
          allow read: if true;
-         allow create: if request.resource.data.nome is string
-           && request.resource.data.nome.size() <= 24
-           && request.resource.data.melhorStreak is number
-           && request.resource.data.melhorStreak >= 0
-           && request.resource.data.melhorStreak <= 500;
-         allow update: if request.resource.data.melhorStreak is number
-           && request.resource.data.melhorStreak >= resource.data.melhorStreak
-           && request.resource.data.melhorStreak <= 500;
+         allow write: if request.auth != null && request.auth.uid == uid;
+       }
+       match /usuarios/{uid} {
+         allow read, write: if request.auth != null && request.auth.uid == uid;
        }
      }
    }
@@ -1226,56 +1252,181 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "293801173449",
   appId: "1:293801173449:web:169ea70fcf9bd5da1b0818",
 };
-let db = null;
+let db = null, auth = null;
 if(FIREBASE_CONFIG.apiKey && window.firebase){
   try{
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
-  }catch(e){ db = null; }
+    auth = firebase.auth();
+  }catch(e){ db = null; auth = null; }
 }
-function uid(){
-  if(!state.profile.uid){
-    state.profile.uid = (crypto.randomUUID ? crypto.randomUUID() : ("p"+Date.now()+Math.random().toString(16).slice(2)));
-    saveState();
-  }
-  return state.profile.uid;
-}
+let firebaseUser = null;
+let cloudSyncTimer = null;
+let suppressCloudPush = false;
+
+function isLoggedIn(){ return !!firebaseUser; }
+function uid(){ return firebaseUser ? firebaseUser.uid : null; }
 function hasProfile(){ return !!(state.profile && state.profile.nome); }
+
+function localHasProgress(){
+  return state.score>0 || (state.history && state.history.length>0) || Object.keys(state.solved||{}).length>0;
+}
+function pushCloudState(immediate){
+  if(!db || !firebaseUser || suppressCloudPush) return;
+  const doSend = ()=>{
+    db.collection("usuarios").doc(firebaseUser.uid).set({
+      state, atualizadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+    }).catch(()=>{ /* falha de rede: tenta de novo no próximo saveState() */ });
+  };
+  if(immediate){ clearTimeout(cloudSyncTimer); doSend(); return; }
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(doSend, 1200);
+}
+async function pullCloudState(){
+  if(!db || !firebaseUser) return;
+  try{
+    const doc = await db.collection("usuarios").doc(firebaseUser.uid).get();
+    if(doc.exists && doc.data() && doc.data().state){
+      const cloud = doc.data().state;
+      let useCloud = true;
+      if(localHasProgress()){
+        useCloud = confirm("Essa conta já tem progresso salvo. Clique OK para usar o progresso salvo na conta (o que está só neste aparelho será substituído), ou Cancelar para manter o progresso deste aparelho (ele vai substituir o que está salvo na conta).");
+      }
+      if(useCloud){
+        suppressCloudPush = true;
+        state = cloud;
+        state.profile = state.profile || {};
+        state.profile.uid = firebaseUser.uid;
+        state.profile.email = firebaseUser.email;
+        saveState();
+        suppressCloudPush = false;
+      }else{
+        state.profile.uid = firebaseUser.uid;
+        state.profile.email = firebaseUser.email;
+        saveState();
+        pushCloudState(true);
+      }
+    }else{
+      state.profile.uid = firebaseUser.uid;
+      state.profile.email = firebaseUser.email;
+      saveState();
+      pushCloudState(true);
+    }
+  }catch(e){
+    toast("Não foi possível sincronizar com a nuvem agora.");
+  }
+}
+function traduzErroAuth(code){
+  const map = {
+    "auth/invalid-email":"E-mail inválido.",
+    "auth/missing-password":"Digite uma senha.",
+    "auth/weak-password":"A senha precisa ter pelo menos 6 caracteres.",
+    "auth/email-already-in-use":"Já existe uma conta com esse e-mail. Tente entrar.",
+    "auth/user-not-found":"Não encontramos conta com esse e-mail.",
+    "auth/wrong-password":"Senha incorreta.",
+    "auth/invalid-credential":"E-mail ou senha incorretos.",
+    "auth/too-many-requests":"Muitas tentativas. Espere um pouco e tente de novo.",
+    "auth/network-request-failed":"Falha de conexão. Verifique sua internet.",
+  };
+  return map[code] || "Não foi possível concluir. Tente novamente.";
+}
+function showAuthError(msg){ const el=$("authError"); el.textContent=msg; el.style.display="block"; }
+function hideAuthError(){ $("authError").style.display="none"; }
+
 function renderProfileBar(){
   const bar = $("profileBarText");
   const btn = $("btnProfileEdit");
-  if(hasProfile()){
-    bar.textContent = `Jogando como ${state.profile.nome}${state.profile.turma ? " · "+state.profile.turma : ""}`;
-    btn.textContent = "Editar";
+  if(isLoggedIn()){
+    if(hasProfile()){
+      bar.textContent = `Conta: ${state.profile.nome}${state.profile.turma ? " · "+state.profile.turma : ""} (${firebaseUser.email})`;
+      btn.textContent = "Editar";
+    }else{
+      bar.textContent = `Logado como ${firebaseUser.email} — defina um nome para o ranking`;
+      btn.textContent = "Configurar";
+    }
   }else{
-    bar.textContent = "Crie um perfil pra entrar no ranking da escola";
-    btn.textContent = "Criar perfil";
+    bar.textContent = "Jogando como convidado — progresso salvo só neste aparelho";
+    btn.textContent = "Criar conta / Entrar";
+  }
+}
+function updateAccountModalView(){
+  if(isLoggedIn()){
+    $("accountLoggedOut").style.display="none";
+    $("accountLoggedIn").style.display="block";
+    $("accountEmailLabel").textContent = "Logado como "+(firebaseUser.email||"");
+    $("profileNome").value = state.profile.nome||"";
+    $("profileTurma").value = state.profile.turma||"";
+  }else{
+    $("accountLoggedOut").style.display="block";
+    $("accountLoggedIn").style.display="none";
+    $("authEmail").value="";
+    $("authSenha").value="";
+    hideAuthError();
   }
 }
 function openProfileModal(){
-  $("profileNome").value = state.profile.nome||"";
-  $("profileTurma").value = state.profile.turma||"";
+  updateAccountModalView();
   $("profileBackdrop").classList.add("show");
 }
 $("btnProfileEdit").addEventListener("click", openProfileModal);
 $("btnProfileClose").addEventListener("click", ()=> $("profileBackdrop").classList.remove("show"));
 $("profileBackdrop").addEventListener("click", (e)=>{ if(e.target.id==="profileBackdrop") $("profileBackdrop").classList.remove("show"); });
+
+$("btnAuthEntrar").addEventListener("click", ()=>{
+  if(!auth){ showAuthError("Login não está configurado neste jogo."); return; }
+  const email=$("authEmail").value.trim();
+  const senha=$("authSenha").value;
+  if(!email || !senha){ showAuthError("Preencha e-mail e senha."); return; }
+  hideAuthError();
+  $("btnAuthEntrar").disabled=true;
+  auth.signInWithEmailAndPassword(email, senha)
+    .then(()=>{ $("profileBackdrop").classList.remove("show"); toast("Login feito."); })
+    .catch(err=> showAuthError(traduzErroAuth(err.code)))
+    .finally(()=> $("btnAuthEntrar").disabled=false);
+});
+$("btnAuthCriar").addEventListener("click", ()=>{
+  if(!auth){ showAuthError("Cadastro não está configurado neste jogo."); return; }
+  const email=$("authEmail").value.trim();
+  const senha=$("authSenha").value;
+  if(!email || !senha){ showAuthError("Preencha e-mail e senha."); return; }
+  if(senha.length<6){ showAuthError("A senha precisa ter pelo menos 6 caracteres."); return; }
+  hideAuthError();
+  $("btnAuthCriar").disabled=true;
+  auth.createUserWithEmailAndPassword(email, senha)
+    .then(()=>{ $("profileBackdrop").classList.remove("show"); toast("Conta criada."); })
+    .catch(err=> showAuthError(traduzErroAuth(err.code)))
+    .finally(()=> $("btnAuthCriar").disabled=false);
+});
+$("btnAuthEsqueci").addEventListener("click", ()=>{
+  if(!auth) return;
+  const email=$("authEmail").value.trim();
+  if(!email){ showAuthError("Digite seu e-mail acima primeiro."); return; }
+  hideAuthError();
+  auth.sendPasswordResetEmail(email)
+    .then(()=> toast("E-mail de redefinição enviado."))
+    .catch(err=> showAuthError(traduzErroAuth(err.code)));
+});
+$("btnAuthGuest").addEventListener("click", ()=>{
+  $("profileBackdrop").classList.remove("show");
+  toast("Jogando como convidado: progresso salvo só neste aparelho.");
+});
+$("btnAuthSair").addEventListener("click", ()=>{
+  if(!confirm("Sair da conta? O progresso já está salvo na nuvem. Neste aparelho, o jogo volta a funcionar como convidado até você entrar de novo.")) return;
+  auth.signOut();
+  $("profileBackdrop").classList.remove("show");
+});
 $("btnProfileSave").addEventListener("click", ()=>{
+  if(!isLoggedIn()){ toast("Entre na sua conta primeiro."); return; }
   const nome = $("profileNome").value.trim().slice(0,18);
   const turma = $("profileTurma").value.trim().slice(0,12);
   if(!nome){ toast("Digite um nome."); return; }
   state.profile.nome = nome;
   state.profile.turma = turma;
-  uid();
+  state.profile.uid = firebaseUser.uid;
+  state.profile.email = firebaseUser.email;
   const ok = saveState();
-  // Confere lendo de volta do localStorage, pra não fingir que salvou se o navegador bloqueou.
-  let confirmado = false;
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    confirmado = !!(raw && JSON.parse(raw).profile && JSON.parse(raw).profile.nome === nome);
-  }catch(e){ confirmado = false; }
-  if(!ok || !confirmado){
-    toast("Não deu pra salvar o perfil neste navegador (armazenamento local bloqueado).");
+  if(!ok){
+    toast("Não deu pra salvar agora. Tente de novo.");
     return;
   }
   renderProfileBar();
@@ -1284,13 +1435,23 @@ $("btnProfileSave").addEventListener("click", ()=>{
   syncGlobalRanking();
 });
 function syncGlobalRanking(){
-  if(!db || !hasProfile()) return;
+  if(!db || !isLoggedIn() || !hasProfile()) return;
   db.collection("jogadores").doc(uid()).set({
     nome: state.profile.nome,
     turma: state.profile.turma||"",
     melhorStreak: state.survival.melhor||0,
     atualizadoEm: firebase.firestore.FieldValue.serverTimestamp(),
   }, {merge:true}).catch(()=>{ /* ranking global é só um extra: falha aqui não afeta o jogo local */ });
+}
+if(auth){
+  auth.onAuthStateChanged(user=>{
+    firebaseUser = user;
+    if(user){
+      pullCloudState().then(()=>{ renderProfileBar(); renderHome(); });
+    }else{
+      renderProfileBar();
+    }
+  });
 }
 function renderRankingList(rows){
   const list = $("rankingList");
